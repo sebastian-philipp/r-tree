@@ -1,3 +1,5 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 -- Copyright (c) 2014, Birte Wagner, Sebastian Philipp
 --
 
@@ -59,12 +61,18 @@ length' :: RTree a -> Int
 length' (Leaf {}) = 1
 length' (Node _ c) = sum $ length' <$> c
 
-insert :: a -> RTree a
-insert = undefined
-
+insert :: a -> MBB -> RTree a -> RTree a
+insert e mbb oldRoot = case maybeSplitNode $ addLeaf (Leaf mbb e) oldRoot of
+        [root] -> root
+        [r1, r2] -> Node (calcMBB' [getMBB r1, getMBB r2]) [r1, r2]
 
 addLeaf :: RTree a -> RTree a -> RTree a
-addLeaf newLeaf@Leaf{} old = Node (calcMBB' [getMBB newLeaf, getMBB old]) (newLeaf : getChilderen old)
+addLeaf newLeaf@Leaf{} old 
+    | depth old == 1 = Node (calcMBB' [getMBB newLeaf, getMBB old]) (newLeaf : getChilderen old)
+    | otherwise      = Node (calcMBB' [getMBB newLeaf, getMBB old]) newChildren
+        where
+--        newChildren :: [RTree a]
+        newChildren = insertLeaf newLeaf (getChilderen old)
 addLeaf _ _ = error "addLeaf: node"
 
 insertLeaf :: RTree a -> [RTree a] -> [RTree a]
@@ -83,16 +91,6 @@ findNodeWithMinimalAreaIncrease f mbb xs = concat $ xsAndIncrease'
         else
             [x]
 
-
-adjustTree :: [RTree a] -> [RTree a]
-adjustTree inNodes = undefined
-    where
-    inNodes' = undefined -- insert'
-    splitted = case maybeSplitNode of
-        [c1, c2] ->  undefined
-        [c1] -> undefined
-
-
 maybeSplitNode :: RTree a -> [RTree a]
 maybeSplitNode x
     | (length $ getChilderen x) > n = splitNode x
@@ -106,6 +104,7 @@ splitNode = undefined
 mergeNodes :: RTree a -> RTree a -> RTree a
 mergeNodes (Node mbb1 c1) (Node mbb2 c2) = Node (calcMBB' [mbb1, mbb2]) (c1 ++ c2)
 mergeNodes _ _ = error "no merge for Leafs"
+
 -- ------------
 -- helpers
 
