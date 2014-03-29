@@ -6,6 +6,7 @@
 module RTree where
 
 import Data.Function
+import Data.List (maximumBy)
 import Control.Applicative ((<$>))
 
 type Point = (Double, Double)
@@ -16,6 +17,7 @@ type MBB = Rect
 data RTree a = 
       Node {getMBB :: MBB, getChilderen :: [RTree a] }
     | Leaf {getMBB :: MBB, getElem :: a}
+    deriving (Show, Eq)
 
 m = 5
 n = 10
@@ -27,9 +29,8 @@ empty = undefined -- Node []
 singleton :: MBB -> a -> RTree a
 singleton mbb x = Leaf mbb x
 
-calcMBB :: RTree a -> MBB
-calcMBB (Node _ x) = calcMBB' $ calcMBB <$> x 
-calcMBB (Leaf bb x) = bb
+calcMBB :: RTree a -> RTree a -> MBB
+calcMBB x y = calcMBB' [getMBB x, getMBB y]
 
 calcMBB' :: [MBB] -> MBB
 calcMBB' [] = error "no MBB"
@@ -61,12 +62,12 @@ length' :: RTree a -> Int
 length' (Leaf {}) = 1
 length' (Node _ c) = sum $ length' <$> c
 
-insert :: a -> MBB -> RTree a -> RTree a
+insert :: (Eq a) => a -> MBB -> RTree a -> RTree a
 insert e mbb oldRoot = case maybeSplitNode $ addLeaf (Leaf mbb e) oldRoot of
         [root] -> root
         [r1, r2] -> Node (calcMBB' [getMBB r1, getMBB r2]) [r1, r2]
 
-addLeaf :: RTree a -> RTree a -> RTree a
+addLeaf :: (Eq a) => RTree a -> RTree a -> RTree a
 addLeaf newLeaf@Leaf{} old 
     | depth old == 1 = Node (calcMBB' [getMBB newLeaf, getMBB old]) (newLeaf : getChilderen old)
     | otherwise      = Node (calcMBB' [getMBB newLeaf, getMBB old]) newChildren
@@ -75,7 +76,7 @@ addLeaf newLeaf@Leaf{} old
         newChildren = insertLeaf newLeaf (getChilderen old)
 addLeaf _ _ = error "addLeaf: node"
 
-insertLeaf :: RTree a -> [RTree a] -> [RTree a]
+insertLeaf :: (Eq a) => RTree a -> [RTree a] -> [RTree a]
 insertLeaf newLeaf oldC = findNodeWithMinimalAreaIncrease (maybeSplitNode . addLeaf newLeaf) (getMBB newLeaf) oldC
 
 findNodeWithMinimalAreaIncrease :: (RTree a -> [RTree a]) -> MBB -> [RTree a] -> [RTree a]
@@ -91,15 +92,29 @@ findNodeWithMinimalAreaIncrease f mbb xs = concat $ xsAndIncrease'
         else
             [x]
 
-maybeSplitNode :: RTree a -> [RTree a]
+maybeSplitNode :: (Eq a) => RTree a -> [RTree a]
 maybeSplitNode x
     | (length $ getChilderen x) > n = splitNode x
     | otherwise = [x]
 
-
 -- how to split?
-splitNode :: RTree a -> [RTree a]
-splitNode = undefined
+splitNode :: (Eq a) => RTree a -> [RTree a]
+splitNode n = [x1, x2]
+    where
+    (l, r) = findGreatestArea $ getChilderen n
+    (x1, x2) = quadSplit l r (filter (\x -> x /= l && x /= r) $ getChilderen n)
+
+findGreatestArea :: (Eq a) => [RTree a] -> (RTree a, RTree a)
+findGreatestArea list = (x, y)
+    where
+    listOfTripels = [(x, y, calcMBB x y) | x <- list, y <- list , x /= y]
+    (x, y, _) = maximumBy (compare `on` (\(_,_,x) -> x)) listOfTripels
+
+
+quadSplit :: RTree a -> RTree a -> [RTree a] -> (RTree a, RTree a)
+quadSplit left right [] = (left, right)
+quadSplit left right unfinished = undefined
+
 
 mergeNodes :: RTree a -> RTree a -> RTree a
 mergeNodes (Node mbb1 c1) (Node mbb2 c2) = Node (calcMBB' [mbb1, mbb2]) (c1 ++ c2)
