@@ -6,7 +6,7 @@
 module RTree where
 
 import Data.Function
-import Data.List (maximumBy)
+import Data.List (maximumBy, minimumBy)
 import Control.Applicative ((<$>))
 
 type Point = (Double, Double)
@@ -111,10 +111,18 @@ findGreatestArea list = (x, y)
     (x, y, _) = maximumBy (compare `on` (\(_,_,x) -> x)) listOfTripels
 
 
-quadSplit :: RTree a -> RTree a -> [RTree a] -> (RTree a, RTree a)
+quadSplit :: (Eq a) => RTree a -> RTree a -> [RTree a] -> (RTree a, RTree a)
 quadSplit left right [] = (left, right)
-quadSplit left right unfinished = undefined
-
+quadSplit left right unfinished
+    | isLeft''  = quadSplit (mergeNodes left minimumElem) right  (filter (\x -> x /= minimumElem) unfinished)
+    | otherwise = quadSplit left  (mergeNodes right minimumElem) (filter (\x -> x /= minimumElem) unfinished)
+        where
+        tripels = (\x -> (x, isLeft x, growth (isLeft x) x)) <$> unfinished
+        isLeft x = (areaIncreasesWith (getMBB x) left) < (areaIncreasesWith (getMBB x) right)
+        growth isLeft' x = case isLeft' of
+            True -> areaIncreasesWith (getMBB x) left
+            False -> areaIncreasesWith (getMBB x) right
+        (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) tripels
 
 mergeNodes :: RTree a -> RTree a -> RTree a
 mergeNodes (Node mbb1 c1) (Node mbb2 c2) = Node (calcMBB' [mbb1, mbb2]) (c1 ++ c2)
