@@ -9,6 +9,8 @@ import Data.Function
 import Data.List (maximumBy, minimumBy)
 import Control.Applicative ((<$>))
 
+import Graphics.Gnuplot.Simple
+
 type Point = (Double, Double)
 
 type Rect = (Point, Point)
@@ -170,3 +172,24 @@ t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
+t_5 = fromList [t_1, t_2, t_3, t_4]
+
+
+
+nodeToPath :: RTree a -> [(Double, Double)]
+nodeToPath e = [(ulx, uly),(brx, uly),(brx, bry),(ulx, bry),(ulx, uly)]
+    where
+    ((ulx, uly),(brx, bry))  = getMBB e
+
+rtreeToPaths :: RTree a -> [[(Double, Double)]]
+rtreeToPaths e@Leaf{} = [nodeToPath e]
+rtreeToPaths e@Node{} = [nodeToPath e] ++ (concat $ rtreeToPaths <$> (getChilderen e))
+
+plotRtree :: RTree a -> IO ()
+plotRtree tree = do
+    print [p20 ulx brx, p20 uly bry]
+    print [ulx, brx, uly, bry]
+    plotPaths [XRange $ p20 ulx brx, YRange $ p20 uly bry] $ rtreeToPaths tree
+    where
+    ((ulx, uly),(brx, bry))  = getMBB tree
+    p20 l r = (l - ((r-l) / 5), r + ((r-l) / 5))
