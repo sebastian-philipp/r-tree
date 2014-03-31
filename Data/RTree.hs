@@ -3,7 +3,7 @@
 -- Copyright (c) 2014, Birte Wagner, Sebastian Philipp
 --
 
-module RTree where
+module Data.RTree where
 
 import Data.Function
 import Data.List (maximumBy, minimumBy)
@@ -19,33 +19,33 @@ data RTree a =
     | Leaf {getMBB :: MBB, getElem :: a}
     deriving (Show, Eq)
 
-m = 5
-n = 10
-order = (m, n)
-
-empty :: RTree a
-empty = undefined -- Node []
+m, n :: Int
+m = 1
+n = 2
 
 singleton :: MBB -> a -> RTree a
 singleton mbb x = Leaf mbb x
 
-calcMBB :: RTree a -> RTree a -> MBB
-calcMBB x y = calcMBB' [getMBB x, getMBB y]
+unifyMBB :: RTree a -> RTree a -> MBB
+unifyMBB x y = unifyMBB' [getMBB x, getMBB y]
 
-calcMBB' :: [MBB] -> MBB
-calcMBB' [] = error "no MBB"
-calcMBB' [x] = x
-calcMBB' ((ul,br):xs) = (minUl, maxBr)
+unifyMBB' :: [MBB] -> MBB
+unifyMBB' [] = error "no MBB"
+unifyMBB' [x] = x
+unifyMBB' ((ul,br):xs) = (minUl, maxBr)
     where
-    (ul', br') = calcMBB' xs
+    (ul', br') = unifyMBB' xs
     minUl :: Point
     minUl = ((min `on` fst) ul ul', (min `on` snd) ul ul')
     maxBr :: Point
     maxBr = ((max `on` fst) br br', (max `on` snd) br br')
 
+combineChildren :: [RTree a] -> RTree a
+combineChildren c = Node (unifyMBB' $ getMBB <$> c) c
+
 validRtree :: RTree a -> Bool
-validRtree (Leaf mbb _) = True
-validRtree x@(Node mbb c) = length c >= 2 && (and $ validRtree <$> c) && (isBalanced x)
+validRtree Leaf{} = True
+validRtree x@(Node _ c) = length c >= 2 && (and $ validRtree <$> c) && (isBalanced x)
 
 depth :: RTree a -> Int
 depth (Leaf _ _ ) = 0
@@ -62,80 +62,111 @@ length' :: RTree a -> Int
 length' (Leaf {}) = 1
 length' (Node _ c) = sum $ length' <$> c
 
+-- ----------------------------------
+
 insert :: (Eq a) => a -> MBB -> RTree a -> RTree a
-insert e mbb oldRoot = case maybeSplitNode $ addLeaf (Leaf mbb e) oldRoot of
+insert e mbb oldRoot = insert' (Leaf mbb e) oldRoot
+
+insert' :: (Eq a) => RTree a-> RTree a -> RTree a
+insert' Node{} _ = error "insert: node"
+insert' newLeaf oldRoot = case addAndSplit newLeaf oldRoot of
         [root] -> root
-        [r1, r2] -> Node (calcMBB' [getMBB r1, getMBB r2]) [r1, r2]
+        [r1, r2] -> combineChildren [r1, r2]
+
+addAndSplit :: (Eq a) => RTree a -> RTree a -> [RTree a]
+addAndSplit leaf e@Node{} = maybeSplitNode $ (addLeaf leaf) e
+addAndSplit leaf e@Leaf{} = [leaf, e] -- root case
 
 addLeaf :: (Eq a) => RTree a -> RTree a -> RTree a
-addLeaf newLeaf@Leaf{} old 
-    | depth old == 1 = Node (calcMBB' [getMBB newLeaf, getMBB old]) (newLeaf : getChilderen old)
-    | otherwise      = Node (calcMBB' [getMBB newLeaf, getMBB old]) newChildren
-        where
---        newChildren :: [RTree a]
-        newChildren = insertLeaf newLeaf (getChilderen old)
+addLeaf leaf@Leaf{} e 
+    | depth e == 0 = Node (leaf `unifyMBB` e) (leaf : getChilderen e)
+    | otherwise    = Node (leaf `unifyMBB` e) (insertLeaf leaf (getChilderen e))
 addLeaf _ _ = error "addLeaf: node"
 
-insertLeaf :: (Eq a) => RTree a -> [RTree a] -> [RTree a]
-insertLeaf newLeaf oldC = findNodeWithMinimalAreaIncrease (maybeSplitNode . addLeaf newLeaf) (getMBB newLeaf) oldC
+maybeSplitNode :: (Eq a) => RTree a -> [RTree a]
+maybeSplitNode Leaf{} = error "splitNode: Leaf"
+maybeSplitNode x
+    | (length $ getChilderen x) > n = splitNode x
+    | otherwise = [x]
 
-findNodeWithMinimalAreaIncrease :: (RTree a -> [RTree a]) -> MBB -> [RTree a] -> [RTree a]
-findNodeWithMinimalAreaIncrease f mbb xs = concat $ xsAndIncrease'
+insertLeaf :: (Eq a) => RTree a -> [RTree a] -> [RTree a]
+insertLeaf newLeaf children = findNodeWithMinimalAreaIncrease (addAndSplit newLeaf) newLeaf children
+
+findNodeWithMinimalAreaIncrease :: (RTree a -> [RTree a]) -> RTree a -> [RTree a] -> [RTree a]
+findNodeWithMinimalAreaIncrease f e children = concat $ xsAndIncrease'
     where
---    xsAndIncrease :: [(RTree a, Double)]    
-    xsAndIncrease = zip xs ((areaIncreasesWith mbb) <$> xs)
+--  xsAndIncrease :: [(RTree a, Double)]    
+    xsAndIncrease = zip children ((areaIncreasesWith e) <$> children)
     minimalIncrease = minimum $ snd <$> xsAndIncrease
---    xsAndIncrease' :: [(RTree a, Double)]    
+--  xsAndIncrease' :: [(RTree a, Double)]    
     xsAndIncrease' = map mapIf xsAndIncrease
     mapIf (x, increase) = if increase == minimalIncrease then
             f x
         else
             [x]
 
-maybeSplitNode :: (Eq a) => RTree a -> [RTree a]
-maybeSplitNode x
-    | (length $ getChilderen x) > n = splitNode x
-    | otherwise = [x]
-
--- how to split?
+-- | /O(n²)/ solution
 splitNode :: (Eq a) => RTree a -> [RTree a]
-splitNode n = [x1, x2]
+splitNode Leaf{} = error "splitNode: Leaf"
+splitNode e = [combineChildren x1, combineChildren x2]
     where
-    (l, r) = findGreatestArea $ getChilderen n
-    (x1, x2) = quadSplit l r (filter (\x -> x /= l && x /= r) $ getChilderen n)
+    (l, r) = findGreatestArea $ getChilderen e
+    (x1, x2) = quadSplit [l] [r] (filter (\x -> x /= l && x /= r) $ getChilderen e)
 
 findGreatestArea :: (Eq a) => [RTree a] -> (RTree a, RTree a)
-findGreatestArea list = (x, y)
+findGreatestArea list = (x', y')
     where
-    listOfTripels = [(x, y, calcMBB x y) | x <- list, y <- list , x /= y]
-    (x, y, _) = maximumBy (compare `on` (\(_,_,x) -> x)) listOfTripels
+    listOfTripels = [(x, y, unifyMBB x y) | x <- list, y <- list , x /= y]
+    (x', y', _) = maximumBy (compare `on` (\(_,_,x) -> area x)) listOfTripels
 
 
-quadSplit :: (Eq a) => RTree a -> RTree a -> [RTree a] -> (RTree a, RTree a)
+quadSplit :: (Eq a) => [RTree a] -> [RTree a] -> [RTree a] -> ([RTree a], [RTree a])
 quadSplit left right [] = (left, right)
 quadSplit left right unfinished
-    | isLeft''  = quadSplit (mergeNodes left minimumElem) right  (filter (\x -> x /= minimumElem) unfinished)
-    | otherwise = quadSplit left  (mergeNodes right minimumElem) (filter (\x -> x /= minimumElem) unfinished)
+    | (length left) + (length unfinished)  <= m = (left ++ unfinished, right)
+    | (length right) + (length unfinished) <= m = (left, right ++ unfinished)
+    | isLeft''  = quadSplit (minimumElem : left) right  newRest
+    | otherwise = quadSplit left  (minimumElem : right) newRest
         where
-        tripels = (\x -> (x, isLeft x, growth (isLeft x) x)) <$> unfinished
-        isLeft x = (areaIncreasesWith (getMBB x) left) < (areaIncreasesWith (getMBB x) right)
-        growth isLeft' x = case isLeft' of
-            True -> areaIncreasesWith (getMBB x) left
-            False -> areaIncreasesWith (getMBB x) right
-        (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) tripels
+--      makeTripel :: RTree a -> (RTree a, Bool, Double)
+        makeTripel x = (x, isLeft, growth)
+            where
+            isLeft = (areaIncreasesWithLeft) < (areaIncreasesWithRight)
+            growth = case isLeft of
+                True -> areaIncreasesWithLeft
+                False -> areaIncreasesWithRight
+            areaIncreasesWithLeft  = (areaIncreasesWith x (combineChildren left))
+            areaIncreasesWithRight = (areaIncreasesWith x (combineChildren right))
+        (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) $ makeTripel <$> unfinished
+        newRest = (filter (\x -> x /= minimumElem) unfinished)
 
 mergeNodes :: RTree a -> RTree a -> RTree a
-mergeNodes (Node mbb1 c1) (Node mbb2 c2) = Node (calcMBB' [mbb1, mbb2]) (c1 ++ c2)
-mergeNodes _ _ = error "no merge for Leafs"
+mergeNodes x@Node{} y@Node{} = Node (unifyMBB x y) (on (++) getChilderen x y)
+mergeNodes _ _               = error "no merge for Leafs"
 
+fromList :: (Eq a) => [RTree a] -> RTree a
+fromList = foldr1 insert'
 -- ------------
 -- helpers
 
 area :: MBB -> Double
 area ((x1, y1), (x2, y2)) = (x2 - x1) * (y2 - y1)
 
-areaIncreasesWith :: MBB -> (RTree a) -> Double
+areaIncreasesWith :: RTree a -> (RTree a) -> Double
 areaIncreasesWith newElem current = newArea - currentArea
     where
     currentArea = area $ getMBB current
-    newArea = area $ calcMBB' [newElem, getMBB current]
+    newArea = area $ unifyMBB newElem current
+
+
+-- ----------------
+t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
+t_mbb1 = ((0.0,0.0),(1.0,1.0))
+t_mbb2 = ((5.0,0.0),(6.0,1.0))
+t_mbb3 = ((1.0,2.0),(2.0,3.0))
+t_mbb4 = ((6.0,2.0),(7.0,3.0))
+t_1, t_2, t_3, t_4 :: RTree String
+t_1 = singleton t_mbb1 "a"
+t_2 = singleton t_mbb2 "b"
+t_3 = singleton t_mbb3 "c"
+t_4 = singleton t_mbb4 "d"
