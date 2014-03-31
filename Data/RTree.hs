@@ -146,8 +146,11 @@ mergeNodes :: RTree a -> RTree a -> RTree a
 mergeNodes x@Node{} y@Node{} = Node (unifyMBB x y) (on (++) getChilderen x y)
 mergeNodes _ _               = error "no merge for Leafs"
 
-fromList :: (Eq a) => [RTree a] -> RTree a
-fromList = foldr1 insert'
+fromList :: (Eq a) => [(MBB, a)] -> RTree a
+fromList l = fromList' $ (uncurry singleton) <$> l
+
+fromList' :: (Eq a) => [RTree a] -> RTree a
+fromList' = foldr1 insert'
 -- ------------
 -- helpers
 
@@ -172,7 +175,7 @@ t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
-t_5 = fromList [t_1, t_2, t_3, t_4]
+t_5 = fromList' [t_1, t_2, t_3, t_4]
 
 
 
@@ -189,7 +192,18 @@ plotRtree :: RTree a -> IO ()
 plotRtree tree = do
     print [p20 ulx brx, p20 uly bry]
     print [ulx, brx, uly, bry]
-    plotPaths [XRange $ p20 ulx brx, YRange $ p20 uly bry] $ rtreeToPaths tree
+    plotPaths [Key Nothing, XRange $ p20 ulx brx, YRange $ p20 uly bry] $ rtreeToPaths tree
     where
     ((ulx, uly),(brx, bry))  = getMBB tree
     p20 l r = (l - ((r-l) / 5), r + ((r-l) / 5))
+
+
+testData :: FilePath -> IO (RTree ())
+testData p = do
+    d <- lines <$> readFile p
+    let pairs = zip (listToMBB <$> (map read d)) (replicate 100000000 ())
+    return $ fromList pairs
+    where
+        listToMBB :: [Double] -> MBB
+        listToMBB [ulx, uly, brx, bry] = ((ulx, uly),(brx, bry))
+
