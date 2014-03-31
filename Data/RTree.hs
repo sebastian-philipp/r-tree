@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances #-}
 
 -- Copyright (c) 2014, Birte Wagner, Sebastian Philipp
 --
@@ -6,7 +6,7 @@
 module Data.RTree where
 
 import Data.Function
-import Data.List (maximumBy, minimumBy)
+import Data.List (maximumBy, minimumBy, nub)
 import Control.Applicative ((<$>))
 
 import Graphics.Gnuplot.Simple
@@ -19,11 +19,11 @@ type MBB = Rect
 data RTree a = 
       Node {getMBB :: MBB, getChilderen :: [RTree a] }
     | Leaf {getMBB :: MBB, getElem :: a}
-    deriving (Show, Eq)
+    deriving (Show, Eq, Functor)
 
 m, n :: Int
-m = 1
-n = 2
+m = 5
+n = 10
 
 singleton :: MBB -> a -> RTree a
 singleton mbb x = Leaf mbb x
@@ -45,17 +45,20 @@ unifyMBB' ((ul,br):xs) = (minUl, maxBr)
 combineChildren :: [RTree a] -> RTree a
 combineChildren c = Node (unifyMBB' $ getMBB <$> c) c
 
-validRtree :: RTree a -> Bool
-validRtree Leaf{} = True
-validRtree x@(Node _ c) = length c >= 2 && (and $ validRtree <$> c) && (isBalanced x)
+validRtree :: Show b => b -> RTree a -> Bool
+validRtree context Leaf{} = True
+validRtree context x@(Node mbb c) = case length c >= m && length c <= n && (and $ (validRtree context) <$> c) && (isBalanced x) of
+    True -> True
+    False -> error ( "invalid " ++ show (length c) ++ " " ++ show context )
+    where
+    isBalanced :: RTree a -> Bool 
+    isBalanced (Leaf _ _ ) = True
+    isBalanced (Node _ c) = (and $ isBalanced <$> c) && (and $ (== depth (head c)) <$> (depth <$> c))
 
 depth :: RTree a -> Int
 depth (Leaf _ _ ) = 0
 depth (Node _ c) = 1 + (depth $ head c)
 
-isBalanced :: RTree a -> Bool 
-isBalanced (Leaf _ _ ) = True
-isBalanced (Node _ c) = (and $ isBalanced <$> c) && (and $ (== depth (head c)) <$> (depth <$> c))
 
 lookup :: a -> RTree a -> a
 lookup = undefined
@@ -66,32 +69,33 @@ length' (Node _ c) = sum $ length' <$> c
 
 -- ----------------------------------
 
-insert :: (Eq a) => a -> MBB -> RTree a -> RTree a
+insert :: a -> MBB -> RTree a -> RTree a
 insert e mbb oldRoot = insert' (Leaf mbb e) oldRoot
 
-insert' :: (Eq a) => RTree a-> RTree a -> RTree a
+insert' :: RTree a-> RTree a -> RTree a
 insert' Node{} _ = error "insert: node"
 insert' newLeaf oldRoot = case addAndSplit newLeaf oldRoot of
         [root] -> root
         [r1, r2] -> combineChildren [r1, r2]
 
-addAndSplit :: (Eq a) => RTree a -> RTree a -> [RTree a]
+addAndSplit :: RTree a -> RTree a -> [RTree a]
 addAndSplit leaf e@Node{} = maybeSplitNode $ (addLeaf leaf) e
 addAndSplit leaf e@Leaf{} = [leaf, e] -- root case
 
-addLeaf :: (Eq a) => RTree a -> RTree a -> RTree a
+addLeaf :: RTree a -> RTree a -> RTree a
 addLeaf leaf@Leaf{} e 
-    | depth e == 0 = Node (leaf `unifyMBB` e) (leaf : getChilderen e)
+    | depth e == 1 = Node (leaf `unifyMBB` e) (leaf : (filter (on (/=) getMBB leaf) $ getChilderen e))
     | otherwise    = Node (leaf `unifyMBB` e) (insertLeaf leaf (getChilderen e))
 addLeaf _ _ = error "addLeaf: node"
 
-maybeSplitNode :: (Eq a) => RTree a -> [RTree a]
+
+maybeSplitNode :: RTree a -> [RTree a]
 maybeSplitNode Leaf{} = error "splitNode: Leaf"
 maybeSplitNode x
     | (length $ getChilderen x) > n = splitNode x
     | otherwise = [x]
 
-insertLeaf :: (Eq a) => RTree a -> [RTree a] -> [RTree a]
+insertLeaf :: RTree a -> [RTree a] -> [RTree a]
 insertLeaf newLeaf children = findNodeWithMinimalAreaIncrease (addAndSplit newLeaf) newLeaf children
 
 findNodeWithMinimalAreaIncrease :: (RTree a -> [RTree a]) -> RTree a -> [RTree a] -> [RTree a]
@@ -108,21 +112,23 @@ findNodeWithMinimalAreaIncrease f e children = concat $ xsAndIncrease'
             [x]
 
 -- | /O(n²)/ solution
-splitNode :: (Eq a) => RTree a -> [RTree a]
+splitNode :: RTree a -> [RTree a]
 splitNode Leaf{} = error "splitNode: Leaf"
 splitNode e = [combineChildren x1, combineChildren x2]
     where
     (l, r) = findGreatestArea $ getChilderen e
-    (x1, x2) = quadSplit [l] [r] (filter (\x -> x /= l && x /= r) $ getChilderen e)
+    (x1, x2) = quadSplit [l] [r] unfinished
+    unfinished = filter (on (/=) getMBB l) $ filter (on (/=) getMBB r) $ getChilderen e
 
-findGreatestArea :: (Eq a) => [RTree a] -> (RTree a, RTree a)
-findGreatestArea list = (x', y')
+findGreatestArea :: [RTree a] -> (RTree a, RTree a)
+findGreatestArea xs = (x', y')
     where
-    listOfTripels = [(x, y, unifyMBB x y) | x <- list, y <- list , x /= y]
+    xs' = zip xs [1..]
+    listOfTripels = [(fst x, fst y, on unifyMBB fst x y) | x <- xs', y <- xs', ((<) `on` snd) x y]
     (x', y', _) = maximumBy (compare `on` (\(_,_,x) -> area x)) listOfTripels
 
 
-quadSplit :: (Eq a) => [RTree a] -> [RTree a] -> [RTree a] -> ([RTree a], [RTree a])
+quadSplit :: [RTree a] -> [RTree a] -> [RTree a] -> ([RTree a], [RTree a])
 quadSplit left right [] = (left, right)
 quadSplit left right unfinished
     | (length left) + (length unfinished)  <= m = (left ++ unfinished, right)
@@ -140,16 +146,16 @@ quadSplit left right unfinished
             areaIncreasesWithLeft  = (areaIncreasesWith x (combineChildren left))
             areaIncreasesWithRight = (areaIncreasesWith x (combineChildren right))
         (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) $ makeTripel <$> unfinished
-        newRest = (filter (\x -> x /= minimumElem) unfinished)
+        newRest = (filter (on (/=) getMBB minimumElem) unfinished)
 
 mergeNodes :: RTree a -> RTree a -> RTree a
 mergeNodes x@Node{} y@Node{} = Node (unifyMBB x y) (on (++) getChilderen x y)
 mergeNodes _ _               = error "no merge for Leafs"
 
-fromList :: (Eq a) => [(MBB, a)] -> RTree a
+fromList :: [(MBB, a)] -> RTree a
 fromList l = fromList' $ (uncurry singleton) <$> l
 
-fromList' :: (Eq a) => [RTree a] -> RTree a
+fromList' :: [RTree a] -> RTree a
 fromList' = foldr1 insert'
 -- ------------
 -- helpers
@@ -176,7 +182,12 @@ t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
 t_5 = fromList' [t_1, t_2, t_3, t_4]
-
+t_p = Node {getMBB = ((6469.0,9103.0),(6656.0,9721.0)), getChilderen = [
+    Leaf {getMBB = ((6469.0,9103.0),(6469.0,9721.0)), getElem = ()},
+    Leaf {getMBB = ((6786.0,9678.0),(6656.0,9651.0)), getElem = ()},
+    Leaf {getMBB = ((6593.0,9103.0),(6593.0,9721.0)), getElem = ()}]}
+t_pp = Leaf {getMBB = ((6531.0,9103.0),(6531.0,9721.0)), getElem = ()}
+t_ppp = insert' t_pp t_p
 
 
 nodeToPath :: RTree a -> [(Double, Double)]
@@ -187,6 +198,7 @@ nodeToPath e = [(ulx, uly),(brx, uly),(brx, bry),(ulx, bry),(ulx, uly)]
 rtreeToPaths :: RTree a -> [[(Double, Double)]]
 rtreeToPaths e@Leaf{} = [nodeToPath e]
 rtreeToPaths e@Node{} = [nodeToPath e] ++ (concat $ rtreeToPaths <$> (getChilderen e))
+   
 
 plotRtree :: RTree a -> IO ()
 plotRtree tree = do
