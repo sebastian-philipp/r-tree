@@ -5,8 +5,10 @@
 
 module Data.RTree where
 
+import Prelude hiding (lookup)
 import Data.Function
-import Data.List (maximumBy, minimumBy, nub)
+import Data.List (maximumBy, minimumBy, nub, partition)
+import Data.Maybe (catMaybes)
 import Control.Applicative ((<$>))
 
 import Graphics.Gnuplot.Simple
@@ -59,9 +61,6 @@ depth :: RTree a -> Int
 depth (Leaf _ _ ) = 0
 depth (Node _ c) = 1 + (depth $ head c)
 
-
-lookup :: a -> RTree a -> a
-lookup = undefined
 
 length' :: RTree a -> Int 
 length' (Leaf {}) = 1
@@ -156,7 +155,9 @@ fromList :: [(MBB, a)] -> RTree a
 fromList l = fromList' $ (uncurry singleton) <$> l
 
 fromList' :: [RTree a] -> RTree a
-fromList' = foldr1 insert'
+fromList' [] = error "fromList' empty"
+fromList' [t] = t
+fromList' ts = foldr1 insert' ts
 -- ------------
 -- helpers
 
@@ -169,6 +170,49 @@ areaIncreasesWith newElem current = newArea - currentArea
     currentArea = area $ getMBB current
     newArea = area $ unifyMBB newElem current
 
+-- -----------------
+-- lookup
+
+isIn :: MBB -> MBB -> Bool
+isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y21 >= y22
+
+
+lookup :: MBB -> RTree a -> Maybe a
+lookup mbb t@Leaf{}
+    | mbb == getMBB t = Just $ getElem t
+    | otherwise = Nothing
+lookup mbb t@Node{} = case founds of 
+    [] -> Nothing
+    x:_ -> Just x
+    where
+    matches = filter (\x -> mbb `isIn` (getMBB x)) $ getChilderen t
+    founds = catMaybes $ map (lookup mbb) matches
+
+
+-- -----------
+-- delete
+
+
+delete :: MBB -> RTree a -> RTree a
+delete mbb t@Leaf{} = error "TODO: empty R-Tree"
+delete mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
+    where
+    (matches, noMatches) = partition (\x -> mbb `isIn` (getMBB x)) $ getChilderen t
+    matches' = case matches of
+        [] -> []
+        [Leaf{}] -> []
+        xs -> map (delete mbb) xs
+    (orphans, validMatches) = foldr handleInvalid ([], []) matches'
+--  handleInvalid :: RTree a -> ([RTree a], [RTree a]) -> ([RTree a], [RTree a])
+    handleInvalid (Node _ children) (orphans', validMatches')
+        | length children < m = (children ++ orphans', validMatches')
+        | otherwise = (orphans', t:validMatches')
+    handleInvalid _ _ = error "delete/handleInvalid: leaf"    
+    newValidNode = combineChildren $ validMatches ++ noMatches
+
+
+
+--delete' :: MBB -> RTree a -> Either (RTree a) [(MBB, a)]
 
 -- ----------------
 t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
