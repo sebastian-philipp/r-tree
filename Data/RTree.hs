@@ -44,12 +44,12 @@ unifyMBB' ((ul,br):xs) = (minUl, maxBr)
     maxBr :: Point
     maxBr = ((max `on` fst) br br', (max `on` snd) br br')
 
-combineChildren :: [RTree a] -> RTree a
-combineChildren c = Node (unifyMBB' $ getMBB <$> c) c
+createNodeWithChildren :: [RTree a] -> RTree a
+createNodeWithChildren c = Node (unifyMBB' $ getMBB <$> c) c
 
-validRtree :: Show b => b -> RTree a -> Bool
-validRtree context Leaf{} = True
-validRtree context x@(Node mbb c) = case length c >= m && length c <= n && (and $ (validRtree context) <$> c) && (isBalanced x) of
+isValid :: Show b => b -> RTree a -> Bool
+isValid context Leaf{} = True
+isValid context x@(Node mbb c) = case length c >= m && length c <= n && (and $ (isValid context) <$> c) && (isBalanced x) of
     True -> True
     False -> error ( "invalid " ++ show (length c) ++ " " ++ show context )
     where
@@ -68,52 +68,49 @@ length' (Node _ c) = sum $ length' <$> c
 
 -- ----------------------------------
 
-insert :: a -> MBB -> RTree a -> RTree a
-insert e mbb oldRoot = insert' (Leaf mbb e) oldRoot
+insert :: MBB -> a -> RTree a -> RTree a
+insert mbb e oldRoot = insert' (Leaf mbb e) oldRoot
 
-insert' :: RTree a-> RTree a -> RTree a
+insert' :: RTree a -> RTree a -> RTree a
 insert' Node{} _ = error "insert: node"
 insert' newLeaf oldRoot = case addAndSplit newLeaf oldRoot of
-        [root] -> root
-        [r1, r2] -> combineChildren [r1, r2]
+        [node] -> node
+        nodes -> createNodeWithChildren nodes
 
 addAndSplit :: RTree a -> RTree a -> [RTree a]
-addAndSplit leaf e@Node{} = maybeSplitNode $ (addLeaf leaf) e
 addAndSplit leaf e@Leaf{} = [leaf, e] -- root case
+addAndSplit leaf e@Node{}
+    | (length $ getChilderen newLeaf) > n = splitNode newLeaf
+    | otherwise = [newLeaf]
+    where
+    newLeaf = addLeaf leaf e
+
 
 addLeaf :: RTree a -> RTree a -> RTree a
 addLeaf leaf@Leaf{} e 
     | depth e == 1 = Node (leaf `unifyMBB` e) (leaf : (filter (on (/=) getMBB leaf) $ getChilderen e))
-    | otherwise    = Node (leaf `unifyMBB` e) (insertLeaf leaf (getChilderen e))
+    | otherwise    = Node (leaf `unifyMBB` e) newChildren
+    where
+    newChildren = findNodeWithMinimalAreaIncrease leaf (getChilderen e)
 addLeaf _ _ = error "addLeaf: node"
 
-
-maybeSplitNode :: RTree a -> [RTree a]
-maybeSplitNode Leaf{} = error "splitNode: Leaf"
-maybeSplitNode x
-    | (length $ getChilderen x) > n = splitNode x
-    | otherwise = [x]
-
-insertLeaf :: RTree a -> [RTree a] -> [RTree a]
-insertLeaf newLeaf children = findNodeWithMinimalAreaIncrease (addAndSplit newLeaf) newLeaf children
-
-findNodeWithMinimalAreaIncrease :: (RTree a -> [RTree a]) -> RTree a -> [RTree a] -> [RTree a]
-findNodeWithMinimalAreaIncrease f e children = concat $ xsAndIncrease'
+findNodeWithMinimalAreaIncrease :: RTree a -> [RTree a] -> [RTree a]
+findNodeWithMinimalAreaIncrease leaf children = concat $ xsAndIncrease'
     where
 --  xsAndIncrease :: [(RTree a, Double)]    
-    xsAndIncrease = zip children ((areaIncreasesWith e) <$> children)
+    xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
     minimalIncrease = minimum $ snd <$> xsAndIncrease
 --  xsAndIncrease' :: [(RTree a, Double)]    
     xsAndIncrease' = map mapIf xsAndIncrease
     mapIf (x, increase) = if increase == minimalIncrease then
-            f x
+            addAndSplit leaf x
         else
             [x]
 
 -- | /O(n²)/ solution
 splitNode :: RTree a -> [RTree a]
 splitNode Leaf{} = error "splitNode: Leaf"
-splitNode e = [combineChildren x1, combineChildren x2]
+splitNode e = [createNodeWithChildren x1, createNodeWithChildren x2]
     where
     (l, r) = findGreatestArea $ getChilderen e
     (x1, x2) = quadSplit [l] [r] unfinished
@@ -142,8 +139,8 @@ quadSplit left right unfinished
             growth = case isLeft of
                 True -> areaIncreasesWithLeft
                 False -> areaIncreasesWithRight
-            areaIncreasesWithLeft  = (areaIncreasesWith x (combineChildren left))
-            areaIncreasesWithRight = (areaIncreasesWith x (combineChildren right))
+            areaIncreasesWithLeft  = (areaIncreasesWith x (createNodeWithChildren left))
+            areaIncreasesWithRight = (areaIncreasesWith x (createNodeWithChildren right))
         (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) $ makeTripel <$> unfinished
         newRest = (filter (on (/=) getMBB minimumElem) unfinished)
 
@@ -174,7 +171,7 @@ areaIncreasesWith newElem current = newArea - currentArea
 -- lookup
 
 isIn :: MBB -> MBB -> Bool
-isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y21 >= y22
+isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
 
 
 lookup :: MBB -> RTree a -> Maybe a
@@ -192,23 +189,31 @@ lookup mbb t@Node{} = case founds of
 -- -----------
 -- delete
 
-
 delete :: MBB -> RTree a -> RTree a
-delete mbb t@Leaf{} = error "TODO: empty R-Tree"
-delete mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
+delete mbb root = if length (getChilderen newRoot) == 1 then
+        head $ getChilderen newRoot
+    else
+        newRoot
+    where
+    newRoot = delete' mbb root
+
+
+delete' :: MBB -> RTree a -> RTree a
+delete' _   Leaf{}   = error "TODO: empty R-Tree"
+delete' mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
     where
     (matches, noMatches) = partition (\x -> mbb `isIn` (getMBB x)) $ getChilderen t
     matches' = case matches of
         [] -> []
         [Leaf{}] -> []
-        xs -> map (delete mbb) xs
+        xs -> map (delete' mbb) xs
     (orphans, validMatches) = foldr handleInvalid ([], []) matches'
 --  handleInvalid :: RTree a -> ([RTree a], [RTree a]) -> ([RTree a], [RTree a])
     handleInvalid (Node _ children) (orphans', validMatches')
         | length children < m = (children ++ orphans', validMatches')
         | otherwise = (orphans', t:validMatches')
     handleInvalid _ _ = error "delete/handleInvalid: leaf"    
-    newValidNode = combineChildren $ validMatches ++ noMatches
+    newValidNode = createNodeWithChildren $ validMatches ++ noMatches
 
 
 
