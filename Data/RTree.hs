@@ -27,11 +27,9 @@ m, n :: Int
 m = 5
 n = 10
 
-singleton :: MBB -> a -> RTree a
-singleton mbb x = Leaf mbb x
 
-unifyMBB :: RTree a -> RTree a -> MBB
-unifyMBB x y = unifyMBB' [getMBB x, getMBB y]
+-- --------------------------
+-- MBB Ops
 
 unifyMBB' :: [MBB] -> MBB
 unifyMBB' [] = error "no MBB"
@@ -44,27 +42,23 @@ unifyMBB' ((ul,br):xs) = (minUl, maxBr)
     maxBr :: Point
     maxBr = ((max `on` fst) br br', (max `on` snd) br br')
 
+area :: MBB -> Double
+area ((x1, y1), (x2, y2)) = (x2 - x1) * (y2 - y1)
+
+isIn :: MBB -> MBB -> Bool
+isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
+
+
+-- ---------------
+
+singleton :: MBB -> a -> RTree a
+singleton mbb x = Leaf mbb x
+
+unifyMBB :: RTree a -> RTree a -> MBB
+unifyMBB x y = unifyMBB' [getMBB x, getMBB y]
+
 createNodeWithChildren :: [RTree a] -> RTree a
 createNodeWithChildren c = Node (unifyMBB' $ getMBB <$> c) c
-
-isValid :: Show b => b -> RTree a -> Bool
-isValid context Leaf{} = True
-isValid context x@(Node mbb c) = case length c >= m && length c <= n && (and $ (isValid context) <$> c) && (isBalanced x) of
-    True -> True
-    False -> error ( "invalid " ++ show (length c) ++ " " ++ show context )
-    where
-    isBalanced :: RTree a -> Bool 
-    isBalanced (Leaf _ _ ) = True
-    isBalanced (Node _ c) = (and $ isBalanced <$> c) && (and $ (== depth (head c)) <$> (depth <$> c))
-
-depth :: RTree a -> Int
-depth (Leaf _ _ ) = 0
-depth (Node _ c) = 1 + (depth $ head c)
-
-
-length' :: RTree a -> Int 
-length' (Leaf {}) = 1
-length' (Node _ c) = sum $ length' <$> c
 
 -- ----------------------------------
 
@@ -158,8 +152,6 @@ fromList' ts = foldr1 insert' ts
 -- ------------
 -- helpers
 
-area :: MBB -> Double
-area ((x1, y1), (x2, y2)) = (x2 - x1) * (y2 - y1)
 
 areaIncreasesWith :: RTree a -> (RTree a) -> Double
 areaIncreasesWith newElem current = newArea - currentArea
@@ -169,9 +161,6 @@ areaIncreasesWith newElem current = newArea - currentArea
 
 -- -----------------
 -- lookup
-
-isIn :: MBB -> MBB -> Bool
-isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
 
 
 lookup :: MBB -> RTree a -> Maybe a
@@ -215,7 +204,26 @@ delete' mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
     handleInvalid _ _ = error "delete/handleInvalid: leaf"    
     newValidNode = createNodeWithChildren $ validMatches ++ noMatches
 
+-- ---------------
 
+isValid :: Show b => b -> RTree a -> Bool
+isValid context Leaf{} = True
+isValid context x@(Node mbb c) = case length c >= m && length c <= n && (and $ (isValid context) <$> c) && (isBalanced x) of
+    True -> True
+    False -> error ( "invalid " ++ show (length c) ++ " " ++ show context )
+    where
+    isBalanced :: RTree a -> Bool 
+    isBalanced (Leaf _ _ ) = True
+    isBalanced (Node _ c) = (and $ isBalanced <$> c) && (and $ (== depth (head c)) <$> (depth <$> c))
+
+depth :: RTree a -> Int
+depth (Leaf _ _ ) = 0
+depth (Node _ c) = 1 + (depth $ head c)
+
+
+length' :: RTree a -> Int 
+length' (Leaf {}) = 1
+length' (Node _ c) = sum $ length' <$> c
 
 --delete' :: MBB -> RTree a -> Either (RTree a) [(MBB, a)]
 
