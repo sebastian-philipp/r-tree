@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-
+{-# LANGUAGE DeriveGeneric #-}
 
 {- |
   Module     : Data.RTree.MBB
@@ -26,8 +26,11 @@ module Data.RTree.MBB
 )
 where
 
+import Data.Binary
+import GHC.Generics (Generic)  
+
 data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
-    deriving (Show, Eq)
+    deriving (Show, Eq, Generic)
 
 mbb :: Double -> Double -> Double -> Double -> MBB
 mbb = MBB
@@ -54,3 +57,6 @@ intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
     uly'' = max uly uly'
     brx'' = min brx brx'
     bry'' = min bry bry'
+ 
+
+instance Binary MBB

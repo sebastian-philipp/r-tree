@@ -1,5 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable #-}
-
+{-# LANGUAGE DeriveGeneric #-}
 
 {- |
   Module     : Data.RTree
@@ -44,6 +44,7 @@ where
 
 import           Prelude hiding (lookup, length, null)
 
+import           Data.Binary
 import           Data.Function
 import           Data.List (maximumBy, minimumBy, nub, partition)
 import qualified Data.List as L (length)
@@ -53,7 +54,10 @@ import           Data.Typeable (Typeable)
 import           Control.Applicative ((<$>))
 import           Control.DeepSeq (NFData, rnf)
 
+import           GHC.Generics (Generic)
+
 import           Data.RTree.MBB hiding (mbb)
+
 
 data RTree a = 
       Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
@@ -62,7 +66,7 @@ data RTree a =
     | Node  {getMBB ::                  MBB, getChildren' :: [RTree a] }
     | Leaf  {getMBB :: {-# UNPACK #-} ! MBB, getElem :: a}
     | Empty
-    deriving (Show, Eq, Functor, Typeable)
+    deriving (Show, Eq, Functor, Typeable, Generic)
 
 m, n :: Int
 m = 2
@@ -329,3 +333,6 @@ instance NFData a => NFData (RTree a) where
     rnf (Node2 m c1 c2)       = {-rnf m `seq`-} rnf c1 `seq` rnf c2
     rnf (Node3 m c1 c2 c3)    = {-rnf m `seq`-} rnf c1 `seq` rnf c2 `seq` rnf c3
     rnf (Node4 m c1 c2 c3 c4) = {-rnf m `seq`-} rnf c1 `seq` rnf c2 `seq` rnf c3 `seq` rnf c4
+
+
+instance  (Binary a) => Binary (RTree a)
