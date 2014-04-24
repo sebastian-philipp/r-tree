@@ -22,7 +22,7 @@
 
 module Data.RTree 
 (
-    MBB (..),
+    MBB,
     RTree,
     empty,
     singleton,
@@ -50,8 +50,7 @@ import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
 
-data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
-    deriving (Show, Eq)
+import           Data.RTree.MBB hiding (mbb)
 
 data RTree a = 
       Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
@@ -67,33 +66,9 @@ m = 2
 n = 4
 
 
--- --------------------------
--- MBB Ops
+unionMBB' :: RTree a -> RTree a -> MBB
+unionMBB' x y = unionMBB [getMBB x, getMBB y]
 
-unionMBB' :: [MBB] -> MBB
-unionMBB' [] = error "unionMBB': []"
-unionMBB' xs = foldr1 f xs
-    where
-    f (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry') = MBB (min ulx ulx') (min uly uly') (max brx brx') (max bry bry')
-
-area :: MBB -> Double
-area (MBB ulx uly brx bry) = (brx - ulx) * (bry - uly)
-
-isIn :: MBB -> MBB -> Bool
-isIn (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
-
-unionMBB :: RTree a -> RTree a -> MBB
-unionMBB x y = unionMBB' [getMBB x, getMBB y]
-
-intersectMBB :: MBB -> MBB -> Maybe MBB
-intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
-    | ulx'' <= brx'' && uly'' <= bry'' = Just $ MBB ulx'' uly'' brx'' bry''
-    | otherwise                        = Nothing
-    where
-    ulx'' = max ulx ulx'
-    uly'' = max uly uly'
-    brx'' = min brx brx'
-    bry'' = min bry bry'
 -- ---------------
 -- smart constuctors
 
@@ -115,7 +90,7 @@ node _   []        = error "node: empty"
 node mbb xs        = Node mbb xs
 
 createNodeWithChildren :: [RTree a] -> RTree a
-createNodeWithChildren c = node (unionMBB' $ getMBB <$> c) c
+createNodeWithChildren c = node (unionMBB $ getMBB <$> c) c
 
 norm :: RTree a -> RTree a
 norm (Node4 mbb x y z w) = Node mbb [x,y,z,w]
@@ -163,8 +138,8 @@ union left right
 
 addLeaf :: RTree a -> RTree a -> RTree a
 addLeaf left right 
-    | depth left + 1 == depth right = node (left `unionMBB` right) (left : (filter (on (/=) getMBB left) $ getChildren right))
-    | otherwise                 = node (left `unionMBB` right) newChildren
+    | depth left + 1 == depth right = node (left `unionMBB'` right) (left : (filter (on (/=) getMBB left) $ getChildren right))
+    | otherwise                 = node (left `unionMBB'` right) newChildren
     where
     newChildren = findNodeWithMinimalAreaIncrease left (getChildren right)
 
@@ -201,7 +176,7 @@ findGreatestArea :: [RTree a] -> (RTree a, RTree a)
 findGreatestArea xs = (x', y')
     where
     xs' = zip xs [(1::Int)..]
-    listOfTripels = [(fst x, fst y, on unionMBB fst x y) | x <- xs', y <- xs', ((<) `on` snd) x y]
+    listOfTripels = [(fst x, fst y, on unionMBB' fst x y) | x <- xs', y <- xs', ((<) `on` snd) x y]
     (x', y', _) = maximumBy (compare `on` (\(_,_,x) -> area x)) listOfTripels
 
 
@@ -226,7 +201,7 @@ quadSplit left right unfinished
         newRest = (filter (on (/=) getMBB minimumElem) unfinished)
 
 --mergeNodes :: RTree a -> RTree a -> RTree a
---mergeNodes x@Node{} y@Node{} = node (unionMBB x y) (on (++) getChildren x y)
+--mergeNodes x@Node{} y@Node{} = node (unionMBB' x y) (on (++) getChildren x y)
 --mergeNodes _ _               = error "no merge for Leafs"
 
 -- ------------
@@ -237,7 +212,7 @@ areaIncreasesWith :: RTree a -> (RTree a) -> Double
 areaIncreasesWith newElem current = newArea - currentArea
     where
     currentArea = area $ getMBB current
-    newArea = area $ unionMBB newElem current
+    newArea = area $ unionMBB' newElem current
 
 -- -----------------
 -- lookup
@@ -252,14 +227,14 @@ lookup mbb t = case founds of
     [] -> Nothing
     x:_ -> Just x
     where
-    matches = filter (\x -> mbb `isIn` (getMBB x)) $ getChildren t
+    matches = filter (\x -> mbb `containsMBB` (getMBB x)) $ getChildren t
     founds = catMaybes $ map (lookup mbb) matches
 
 
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange _ Empty = []
 lookupRange mbb t@Leaf{}
-    | getMBB t `isIn` mbb = [getElem t]
+    | getMBB t `containsMBB` mbb = [getElem t]
     | otherwise = []
 lookupRange mbb t = founds
     where
@@ -285,7 +260,7 @@ delete' _   Empty    = Empty
 delete' _   Leaf{}   = error "TODO: empty R-Tree"
 delete' mbb t = fromList' $ orphans ++ [newValidNode]
     where
-    (matches, noMatches) = partition (\x -> mbb `isIn` (getMBB x)) $ getChildren t
+    (matches, noMatches) = partition (\x -> mbb `containsMBB` (getMBB x)) $ getChildren t
     matches' = case matches of
         [] -> []
         [Leaf{}] -> []

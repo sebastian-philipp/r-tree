@@ -1,6 +1,7 @@
 module Main
 where
 import           Data.RTree
+import           Data.RTree.MBB
 
 import           Prelude                              hiding (lookup, map, null, length)
 import qualified Data.List as L (map)
@@ -27,21 +28,21 @@ main = do
 
 
 t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
-t_mbb1 = (MBB 0.0 0.0 1.0 1.0)
-t_mbb2 = (MBB 5.0 0.0 6.0 1.0)
-t_mbb3 = (MBB 1.0 2.0 2.0 3.0)
-t_mbb4 = (MBB 6.0 2.0 7.0 3.0)
+t_mbb1 = (mbb 0.0 0.0 1.0 1.0)
+t_mbb2 = (mbb 5.0 0.0 6.0 1.0)
+t_mbb3 = (mbb 1.0 2.0 2.0 3.0)
+t_mbb4 = (mbb 6.0 2.0 7.0 3.0)
 t_1, t_2, t_3, t_4 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
 t_5 = fromList [(t_mbb1, "a"), (t_mbb2, "b"),(t_mbb3, "c"),(t_mbb4, "d")]
-{- t_p = node (MBB 6469.0 9103.0 6656.0 9721.0) [
-    Leaf {getMBB = (MBB 6469.0 9103.0 6469.0 9721.0), getElem = ()},
-    Leaf {getMBB = (MBB 6786.0 9678.0 6656.0 9651.0), getElem = ()},
-    Leaf {getMBB = (MBB 6593.0 9103.0 6593.0 9721.0), getElem = ()}]
-t_pp = Leaf {getMBB = (MBB 6531.0 9103.0 6531.0 9721.0), getElem = ()}
+{- t_p = node (mbb 6469.0 9103.0 6656.0 9721.0) [
+    Leaf {getmbb = (mbb 6469.0 9103.0 6469.0 9721.0), getElem = ()},
+    Leaf {getmbb = (mbb 6786.0 9678.0 6656.0 9651.0), getElem = ()},
+    Leaf {getmbb = (mbb 6593.0 9103.0 6593.0 9721.0), getElem = ()}]
+t_pp = Leaf {getmbb = (mbb 6531.0 9103.0 6531.0 9721.0), getElem = ()}
 t_ppp = union t_pp t_p
 -}
 
@@ -72,4 +73,4 @@ testData p = do
     return $ fromList pairs
     where
         listToMBB :: [Double] -> MBB
-        listToMBB [ulx, uly, brx, bry] = MBB ulx uly brx bry
+        listToMBB [ulx, uly, brx, bry] = mbb ulx uly brx bry

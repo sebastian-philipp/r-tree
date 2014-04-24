@@ -19,7 +19,8 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:     Data.RTree
+  exposed-modules:     Data.RTree,
+                       Data.RTree.MBB
   -- other-modules:       
   other-extensions:    NoMonomorphismRestriction
   build-depends:       base
