@@ -1,11 +1,45 @@
 {-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable #-}
 
--- Copyright (c) 2014, Birte Wagner, Sebastian Philipp
---
 
-module Data.RTree where
+{- |
+  Module     : Data.RTree
+  Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
+  License    : MIT
 
-import           Prelude hiding (lookup, length)
+  Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
+  Stability  : experimental
+  Portability: not portable
+
+
+  Some function names clash with "Prelude" names, therefore this module is usually
+  imported @qualified@, e.g.
+
+  > import           Data.RTree (RTree)
+  > import qualified Data.RTree as RT
+
+-}
+
+
+module Data.RTree 
+(
+    MBB (..),
+    RTree,
+    empty,
+    singleton,
+    insert,
+    lookup,
+    union,
+    fromList,
+    toList,
+    delete,
+    length,
+    null,
+    foldWithMBB,
+    getMBB
+)
+where
+
+import           Prelude hiding (lookup, length, null)
 
 import           Data.Function
 import           Data.List (maximumBy, minimumBy, nub, partition)
@@ -15,9 +49,7 @@ import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
 
-import Graphics.Gnuplot.Simple
-
-data MBB = MBB {ulx :: {-# UNPACK #-} ! Double, uly :: {-# UNPACK #-} ! Double, brx :: {-# UNPACK #-} ! Double, bry :: {-# UNPACK #-} ! Double}
+data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
     deriving (Show, Eq)
 
 data RTree a = 
@@ -57,6 +89,10 @@ unionMBB x y = unionMBB' [getMBB x, getMBB y]
 
 empty :: RTree a
 empty = Empty
+
+null :: RTree a -> Bool
+null Empty = True
+null _     = False
 
 singleton :: MBB -> a -> RTree a
 singleton mbb x = Leaf mbb x
@@ -198,10 +234,11 @@ areaIncreasesWith newElem current = newArea - currentArea
 
 
 lookup :: MBB -> RTree a -> Maybe a
+lookup _   Empty = Nothing
 lookup mbb t@Leaf{}
     | mbb == getMBB t = Just $ getElem t
     | otherwise = Nothing
-lookup mbb t@Node{} = case founds of 
+lookup mbb t = case founds of 
     [] -> Nothing
     x:_ -> Just x
     where
@@ -222,8 +259,9 @@ delete mbb root = if L.length (getChildren newRoot) == 1 then
 
 
 delete' :: MBB -> RTree a -> RTree a
+delete' _   Empty    = Empty
 delete' _   Leaf{}   = error "TODO: empty R-Tree"
-delete' mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
+delete' mbb t = fromList' $ orphans ++ [newValidNode]
     where
     (matches, noMatches) = partition (\x -> mbb `isIn` (getMBB x)) $ getChildren t
     matches' = case matches of
@@ -239,6 +277,11 @@ delete' mbb t@Node{} = fromList' $ orphans ++ [newValidNode]
         children = getChildren invalidNode
     newValidNode = createNodeWithChildren $ validMatches ++ noMatches
 
+-- ---------------
+foldWithMBB :: (MBB -> a -> b) -> (MBB -> [b] -> b) -> b -> RTree a -> b
+foldWithMBB _ _ n Empty    = n
+foldWithMBB f _ _ t@Leaf{} = f (getMBB t) (getElem t)
+foldWithMBB f g n t        = g (getMBB t) $ foldWithMBB f g n <$> (getChildren t)
 -- ---------------
 
 isValid :: Show b => b -> RTree a -> Bool
@@ -260,57 +303,8 @@ depth t = 1 + (depth $ head $ getChildren t)
 
 
 length :: RTree a -> Int 
+length Empty = 0
 length (Leaf {}) = 1
-length (Node _ c) = sum $ length <$> c
+length t = sum $ length <$> (getChildren t)
 
 --delete' :: MBB -> RTree a -> Either (RTree a) [(MBB, a)]
-
--- ----------------
-t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
-t_mbb1 = (MBB 0.0 0.0 1.0 1.0)
-t_mbb2 = (MBB 5.0 0.0 6.0 1.0)
-t_mbb3 = (MBB 1.0 2.0 2.0 3.0)
-t_mbb4 = (MBB 6.0 2.0 7.0 3.0)
-t_1, t_2, t_3, t_4 :: RTree String
-t_1 = singleton t_mbb1 "a"
-t_2 = singleton t_mbb2 "b"
-t_3 = singleton t_mbb3 "c"
-t_4 = singleton t_mbb4 "d"
-t_5 = fromList' [t_1, t_2, t_3, t_4]
-t_p = node (MBB 6469.0 9103.0 6656.0 9721.0) [
-    Leaf {getMBB = (MBB 6469.0 9103.0 6469.0 9721.0), getElem = ()},
-    Leaf {getMBB = (MBB 6786.0 9678.0 6656.0 9651.0), getElem = ()},
-    Leaf {getMBB = (MBB 6593.0 9103.0 6593.0 9721.0), getElem = ()}]
-t_pp = Leaf {getMBB = (MBB 6531.0 9103.0 6531.0 9721.0), getElem = ()}
-t_ppp = union t_pp t_p
-
-
-nodeToPath :: RTree a -> [(Double, Double)]
-nodeToPath e = [(ulx, uly),(brx, uly),(brx, bry),(ulx, bry),(ulx, uly)]
-    where
-    (MBB ulx uly brx bry)  = getMBB e
-
-rtreeToPaths :: RTree a -> [[(Double, Double)]]
-rtreeToPaths e@Leaf{} = [nodeToPath e]
-rtreeToPaths e = [nodeToPath e] ++ (concat $ rtreeToPaths <$> (getChildren e))
-   
-
-plotRtree :: RTree a -> IO ()
-plotRtree tree = do
-    print [p20 ulx brx, p20 uly bry]
-    print [ulx, brx, uly, bry]
-    plotPaths [Key Nothing, XRange $ p20 ulx brx, YRange $ p20 uly bry] $ rtreeToPaths tree
-    where
-    (MBB ulx uly brx bry)  = getMBB tree
-    p20 l r = (l - ((r-l) / 5), r + ((r-l) / 5))
-
-
-testData :: FilePath -> IO (RTree ())
-testData p = do
-    d <- lines <$> readFile p
-    let pairs = zip (listToMBB <$> (map read d)) (replicate 100000000 ())
-    return $ fromList pairs
-    where
-        listToMBB :: [Double] -> MBB
-        listToMBB [ulx, uly, brx, bry] = MBB ulx uly brx bry
-
