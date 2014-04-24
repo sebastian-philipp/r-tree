@@ -28,6 +28,7 @@ module Data.RTree
     singleton,
     insert,
     lookup,
+    lookupRange,
     union,
     fromList,
     toList,
@@ -44,7 +45,7 @@ import           Prelude hiding (lookup, length, null)
 import           Data.Function
 import           Data.List (maximumBy, minimumBy, nub, partition)
 import qualified Data.List as L (length)
-import           Data.Maybe (catMaybes)
+import           Data.Maybe (catMaybes, mapMaybe, isJust)
 import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
@@ -84,6 +85,15 @@ isIn (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && 
 unionMBB :: RTree a -> RTree a -> MBB
 unionMBB x y = unionMBB' [getMBB x, getMBB y]
 
+intersectMBB :: MBB -> MBB -> Maybe MBB
+intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
+    | ulx'' <= brx'' && uly'' <= bry'' = Just $ MBB ulx'' uly'' brx'' bry''
+    | otherwise                        = Nothing
+    where
+    ulx'' = max ulx ulx'
+    uly'' = max uly uly'
+    brx'' = min brx brx'
+    bry'' = min bry bry'
 -- ---------------
 -- smart constuctors
 
@@ -244,6 +254,18 @@ lookup mbb t = case founds of
     where
     matches = filter (\x -> mbb `isIn` (getMBB x)) $ getChildren t
     founds = catMaybes $ map (lookup mbb) matches
+
+
+lookupRange :: MBB -> RTree a -> [a]
+lookupRange _ Empty = []
+lookupRange mbb t@Leaf{}
+    | getMBB t `isIn` mbb = [getElem t]
+    | otherwise = []
+lookupRange mbb t = founds
+    where
+    matches = filter intersectRTree $ getChildren t
+    founds = concatMap (lookupRange mbb) matches
+    intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
 
 
 -- -----------
