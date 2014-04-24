@@ -23,7 +23,8 @@ library
                        Data.RTree.MBB
   -- other-modules:       
   other-extensions:    NoMonomorphismRestriction
-  build-depends:       base
+  build-depends:       base,
+                       deepseq
                        
   -- hs-source-dirs:      
   default-language:    Haskell2010

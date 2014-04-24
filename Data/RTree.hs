@@ -51,6 +51,7 @@ import           Data.Maybe (catMaybes, mapMaybe, isJust)
 import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
+import           Control.DeepSeq (NFData, rnf)
 
 import           Data.RTree.MBB hiding (mbb)
 
@@ -320,3 +321,11 @@ length (Leaf {}) = 1
 length t = sum $ length <$> (getChildren t)
 
 --delete' :: MBB -> RTree a -> Either (RTree a) [(MBB, a)]
+
+instance NFData a => NFData (RTree a) where
+    rnf (Empty)               = ()
+    rnf (Leaf m e)            = {-rnf m `seq`-} rnf e
+    rnf (Node m cs)           = {-rnf m `seq`-} rnf cs
+    rnf (Node2 m c1 c2)       = {-rnf m `seq`-} rnf c1 `seq` rnf c2
+    rnf (Node3 m c1 c2 c3)    = {-rnf m `seq`-} rnf c1 `seq` rnf c2 `seq` rnf c3
+    rnf (Node4 m c1 c2 c3 c4) = {-rnf m `seq`-} rnf c1 `seq` rnf c2 `seq` rnf c3 `seq` rnf c4
