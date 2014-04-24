@@ -35,6 +35,8 @@ module Data.RTree
     delete,
     length,
     null,
+    keys,
+    values,
     foldWithMBB,
     getMBB
 )
@@ -104,7 +106,7 @@ getChildren Leaf{} = error "getChildren: Leaf"
 getChildren t = getChildren' $ norm t
 
 -- ----------------------------------
--- creation
+-- Lists
 
 fromList :: [(MBB, a)] -> RTree a
 fromList l = fromList' $ (uncurry singleton) <$> l
@@ -118,6 +120,20 @@ toList :: RTree a -> [(MBB, a)]
 toList Empty = []
 toList (Leaf mbb x) = [(mbb, x)]
 toList t = concatMap toList $ getChildren t
+
+keys :: RTree a -> [MBB]
+keys = foldWithMBB handleLeaf handleNode []
+    where
+    handleLeaf mbb _ = [mbb]
+    handleNode _ xs  = concat xs
+
+values :: RTree a -> [a]
+values = foldWithMBB handleLeaf handleNode []
+    where
+    handleLeaf _ x = [x]
+    handleNode _ xs  = concat xs
+
+
 -- ----------------------------------
 -- insert 
 
@@ -241,7 +257,6 @@ lookupRange mbb t = founds
     matches = filter intersectRTree $ getChildren t
     founds = concatMap (lookupRange mbb) matches
     intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
-
 
 -- -----------
 -- delete
