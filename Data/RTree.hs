@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances #-}
+{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable #-}
 
 -- Copyright (c) 2014, Birte Wagner, Sebastian Philipp
 --
@@ -11,24 +11,23 @@ import           Data.Function
 import           Data.List (maximumBy, minimumBy, nub, partition)
 import qualified Data.List as L (length)
 import           Data.Maybe (catMaybes)
+import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
 
 import Graphics.Gnuplot.Simple
 
-type Point = (Double, Double)
-
-type Rect = (Point, Point)
-type MBB = Rect
+data MBB = MBB {ulx :: {-# UNPACK #-} ! Double, uly :: {-# UNPACK #-} ! Double, brx :: {-# UNPACK #-} ! Double, bry :: {-# UNPACK #-} ! Double}
+    deriving (Show, Eq)
 
 data RTree a = 
-      Node4 {getMBB :: MBB, getC1 :: RTree a, getC2 :: RTree a, getC3 :: RTree a, getC4 :: RTree a }
-    | Node3 {getMBB :: MBB, getC1 :: RTree a, getC2 :: RTree a, getC3 :: RTree a }
-    | Node2 {getMBB :: MBB, getC1 :: RTree a, getC2 :: RTree a }
-    | Node {getMBB :: MBB, getChildren' :: [RTree a] }
-    | Leaf {getMBB :: MBB, getElem :: a}
+      Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
+    | Node3 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a) }
+    | Node2 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a) }
+    | Node  {getMBB ::                  MBB, getChildren' :: [RTree a] }
+    | Leaf  {getMBB :: {-# UNPACK #-} ! MBB, getElem :: a}
     | Empty
-    deriving (Show, Eq, Functor)
+    deriving (Show, Eq, Functor, Typeable)
 
 m, n :: Int
 m = 2
@@ -39,21 +38,16 @@ n = 4
 -- MBB Ops
 
 unionMBB' :: [MBB] -> MBB
-unionMBB' [] = error "no MBB"
-unionMBB' [x] = x
-unionMBB' ((ul,br):xs) = (minUl, maxBr)
+unionMBB' [] = error "unionMBB': []"
+unionMBB' xs = foldr1 f xs
     where
-    (ul', br') = unionMBB' xs
-    minUl :: Point
-    minUl = ((min `on` fst) ul ul', (min `on` snd) ul ul')
-    maxBr :: Point
-    maxBr = ((max `on` fst) br br', (max `on` snd) br br')
+    f (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry') = MBB (min ulx ulx') (min uly uly') (max brx brx') (max bry bry')
 
 area :: MBB -> Double
-area ((x1, y1), (x2, y2)) = (x2 - x1) * (y2 - y1)
+area (MBB ulx uly brx bry) = (brx - ulx) * (bry - uly)
 
 isIn :: MBB -> MBB -> Bool
-isIn ((x11, y11), (x12, y12)) ((x21, y21), (x22, y22)) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
+isIn (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
 
 unionMBB :: RTree a -> RTree a -> MBB
 unionMBB x y = unionMBB' [getMBB x, getMBB y]
@@ -273,32 +267,32 @@ length (Node _ c) = sum $ length <$> c
 
 -- ----------------
 t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
-t_mbb1 = ((0.0,0.0),(1.0,1.0))
-t_mbb2 = ((5.0,0.0),(6.0,1.0))
-t_mbb3 = ((1.0,2.0),(2.0,3.0))
-t_mbb4 = ((6.0,2.0),(7.0,3.0))
+t_mbb1 = (MBB 0.0 0.0 1.0 1.0)
+t_mbb2 = (MBB 5.0 0.0 6.0 1.0)
+t_mbb3 = (MBB 1.0 2.0 2.0 3.0)
+t_mbb4 = (MBB 6.0 2.0 7.0 3.0)
 t_1, t_2, t_3, t_4 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
 t_5 = fromList' [t_1, t_2, t_3, t_4]
-t_p = node ((6469.0,9103.0),(6656.0,9721.0)) [
-    Leaf {getMBB = ((6469.0,9103.0),(6469.0,9721.0)), getElem = ()},
-    Leaf {getMBB = ((6786.0,9678.0),(6656.0,9651.0)), getElem = ()},
-    Leaf {getMBB = ((6593.0,9103.0),(6593.0,9721.0)), getElem = ()}]
-t_pp = Leaf {getMBB = ((6531.0,9103.0),(6531.0,9721.0)), getElem = ()}
+t_p = node (MBB 6469.0 9103.0 6656.0 9721.0) [
+    Leaf {getMBB = (MBB 6469.0 9103.0 6469.0 9721.0), getElem = ()},
+    Leaf {getMBB = (MBB 6786.0 9678.0 6656.0 9651.0), getElem = ()},
+    Leaf {getMBB = (MBB 6593.0 9103.0 6593.0 9721.0), getElem = ()}]
+t_pp = Leaf {getMBB = (MBB 6531.0 9103.0 6531.0 9721.0), getElem = ()}
 t_ppp = union t_pp t_p
 
 
 nodeToPath :: RTree a -> [(Double, Double)]
 nodeToPath e = [(ulx, uly),(brx, uly),(brx, bry),(ulx, bry),(ulx, uly)]
     where
-    ((ulx, uly),(brx, bry))  = getMBB e
+    (MBB ulx uly brx bry)  = getMBB e
 
 rtreeToPaths :: RTree a -> [[(Double, Double)]]
 rtreeToPaths e@Leaf{} = [nodeToPath e]
-rtreeToPaths e@Node{} = [nodeToPath e] ++ (concat $ rtreeToPaths <$> (getChildren e))
+rtreeToPaths e = [nodeToPath e] ++ (concat $ rtreeToPaths <$> (getChildren e))
    
 
 plotRtree :: RTree a -> IO ()
@@ -307,7 +301,7 @@ plotRtree tree = do
     print [ulx, brx, uly, bry]
     plotPaths [Key Nothing, XRange $ p20 ulx brx, YRange $ p20 uly bry] $ rtreeToPaths tree
     where
-    ((ulx, uly),(brx, bry))  = getMBB tree
+    (MBB ulx uly brx bry)  = getMBB tree
     p20 l r = (l - ((r-l) / 5), r + ((r-l) / 5))
 
 
@@ -318,5 +312,5 @@ testData p = do
     return $ fromList pairs
     where
         listToMBB :: [Double] -> MBB
-        listToMBB [ulx, uly, brx, bry] = ((ulx, uly),(brx, bry))
+        listToMBB [ulx, uly, brx, bry] = MBB ulx uly brx bry
 
