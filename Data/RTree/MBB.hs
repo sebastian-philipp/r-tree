@@ -30,7 +30,7 @@ import Data.Binary
 import GHC.Generics (Generic)  
 
 data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
-    deriving (Show, Eq, Generic)
+    deriving (Eq, Generic)
 
 mbb :: Double -> Double -> Double -> Double -> MBB
 mbb = MBB
@@ -58,5 +58,8 @@ intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
     brx'' = min brx brx'
     bry'' = min bry bry'
  
+
+instance Show MBB where
+  show (MBB ulx uly brx bry) = concat ["MBB ", show ulx, " ", show uly, " ", show brx, " ", show bry]
 
 instance Binary MBB

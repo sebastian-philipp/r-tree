@@ -27,9 +27,9 @@ module Data.RTree
     empty,
     singleton,
     insert,
+    union,
     lookup,
     lookupRange,
-    union,
     fromList,
     toList,
     delete,
@@ -38,7 +38,13 @@ module Data.RTree
     keys,
     values,
     foldWithMBB,
-    getMBB
+    getMBB,
+
+    -- | testing
+
+    pp,
+    isValid,
+    unionDistinct
 )
 where
 
@@ -118,8 +124,7 @@ fromList l = fromList' $ (uncurry singleton) <$> l
 
 fromList' :: [RTree a] -> RTree a
 fromList' [] = error "fromList' empty"
-fromList' [t] = t
-fromList' ts = foldr1 union ts
+fromList' ts = foldr1 unionDistinct ts
 
 toList :: RTree a -> [(MBB, a)]
 toList Empty = []
@@ -143,14 +148,17 @@ values = foldWithMBB handleLeaf handleNode []
 -- insert 
 
 insert :: MBB -> a -> RTree a -> RTree a
-insert mbb e oldRoot = union (singleton mbb e) oldRoot
+insert mbb e oldRoot = unionDistinct (singleton mbb e) oldRoot
 
-union :: RTree a -> RTree a -> RTree a
-union Empty{} t           = t
-union t       Empty{}     = t
-union t1@Leaf{} t2@Leaf{} = createNodeWithChildren [t1, t2] -- root case
-union left right
-    | depth left > depth right              = union right left
+-- | unifies left and right RTeee. Works only, if they don't contain common keys. Much faster than union, though. 
+unionDistinct :: RTree a -> RTree a -> RTree a
+unionDistinct Empty{} t           = t
+unionDistinct t       Empty{}     = t
+unionDistinct t1@Leaf{} t2@Leaf{}
+    | on (==) getMBB t1 t2 = t1
+    | otherwise = createNodeWithChildren [t1, t2] -- root case
+unionDistinct left right
+    | depth left > depth right              = unionDistinct right left
     | depth left == depth right             = fromList' $ (getChildren left) ++ [right]
     | (L.length $ getChildren newNode) > n = createNodeWithChildren $ splitNode newNode
     | otherwise                             = newNode
@@ -159,26 +167,26 @@ union left right
 
 addLeaf :: RTree a -> RTree a -> RTree a
 addLeaf left right 
-    | depth left + 1 == depth right = node (left `unionMBB'` right) (left : (filter (on (/=) getMBB left) $ getChildren right))
-    | otherwise                 = node (left `unionMBB'` right) newChildren
+    | depth left + 1 == depth right = node (left `unionMBB'` right) (left : nonEq)
+    | otherwise                     = node (left `unionMBB'` right) newChildren
     where
     newChildren = findNodeWithMinimalAreaIncrease left (getChildren right)
+    (eq, nonEq) = partition (on (==) getMBB left) $ getChildren right
 
 findNodeWithMinimalAreaIncrease :: RTree a -> [RTree a] -> [RTree a]
-findNodeWithMinimalAreaIncrease leaf children = concat $ xsAndIncrease'
+findNodeWithMinimalAreaIncrease leaf children = splitMinimal xsAndIncrease
     where
 --  xsAndIncrease :: [(RTree a, Double)]    
     xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
     minimalIncrease = minimum $ snd <$> xsAndIncrease
---  xsAndIncrease' :: [(RTree a, Double)]    
-    xsAndIncrease' = map mapIf xsAndIncrease
-    mapIf (x, increase) = if increase == minimalIncrease then
-            unionSplit leaf x
-        else
-            [x]
+--  xsAndIncrease' :: [(RTree a, Double)]   
+    splitMinimal [] = []
+    splitMinimal ((t,m):xs)
+        | m == minimalIncrease = unionDistinctSplit leaf t ++ (fst <$> xs)
+        | otherwise            = t : splitMinimal xs
 
-unionSplit :: RTree a -> RTree a -> [RTree a]
-unionSplit leaf e
+unionDistinctSplit :: RTree a -> RTree a -> [RTree a]
+unionDistinctSplit leaf e
     | (L.length $ getChildren newLeaf) > n = splitNode newLeaf
     | otherwise = [newLeaf]
     where
@@ -248,14 +256,14 @@ lookup mbb t = case founds of
     [] -> Nothing
     x:_ -> Just x
     where
-    matches = filter (\x -> mbb `containsMBB` (getMBB x)) $ getChildren t
+    matches = filter (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
     founds = catMaybes $ map (lookup mbb) matches
 
 
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange _ Empty = []
 lookupRange mbb t@Leaf{}
-    | getMBB t `containsMBB` mbb = [getElem t]
+    | mbb `containsMBB` (getMBB t) = [getElem t]
     | otherwise = []
 lookupRange mbb t = founds
     where
@@ -266,11 +274,11 @@ lookupRange mbb t = founds
 -- -----------
 -- delete
 
+-- | Delete a key and its value from the RTree. When the key is not a member of the tree, the original tree is returned.
 delete :: MBB -> RTree a -> RTree a
-delete mbb root = if L.length (getChildren newRoot) == 1 then
-        head $ getChildren newRoot
-    else
-        newRoot
+delete mbb root
+    | L.length (getChildren newRoot) == 1 = head $ getChildren newRoot
+    | otherwise                           = newRoot
     where
     newRoot = delete' mbb root
 
@@ -299,6 +307,12 @@ foldWithMBB :: (MBB -> a -> b) -> (MBB -> [b] -> b) -> b -> RTree a -> b
 foldWithMBB _ _ n Empty    = n
 foldWithMBB f _ _ t@Leaf{} = f (getMBB t) (getElem t)
 foldWithMBB f g n t        = g (getMBB t) $ foldWithMBB f g n <$> (getChildren t)
+
+union :: RTree a -> RTree a -> RTree a
+union Empty Empty = Empty
+union t1 t2
+    | depth t1 <= depth t2 = foldr (uncurry insert) t2 (toList t1)
+    | otherwise            = union t2 t1
 -- ---------------
 
 isValid :: Show b => b -> RTree a -> Bool
@@ -313,6 +327,31 @@ isValid context x = case L.length c >= m && L.length c <= n && (and $ (isValid c
         where
         c' = getChildren x'
     c = getChildren x
+
+-- ----------------------
+i_ :: String
+i_ = "    "
+
+pp :: (Show a) => RTree a -> IO ()
+pp = pp' ""
+
+pp' :: (Show a) => String -> RTree a -> IO ()
+pp' i Empty                 = putStrLn $ i ++ "Empty"
+pp' i (Leaf mbb x)          = putStrLn $ i ++ "Leaf " ++ (show mbb) ++ " " ++ (show x)
+pp' i (Node mbb cs)         = do
+    putStrLn $ i ++ "Node " ++ (show mbb)
+    mapM_ (pp' (i ++ i_)) cs
+pp' i (Node2 mbb c1 c2)       = do
+    putStrLn $ i ++ "Node2 " ++ (show mbb)
+    mapM_ (pp' (i ++ i_)) [c1, c2]
+pp' i (Node3 mbb c1 c2 c3)    = do
+    putStrLn $ i ++ "Node3 " ++ (show mbb)
+    mapM_ (pp' (i ++ i_)) [c1, c2, c3]
+pp' i (Node4 mbb c1 c2 c3 c4) = do
+    putStrLn $ i ++ "Node4 " ++ (show mbb)
+    mapM_ (pp' (i ++ i_)) [c1, c2, c3, c4]
+
+-- ----------------------
 
 depth :: RTree a -> Int
 depth (Leaf _ _ ) = 0

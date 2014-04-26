@@ -1,17 +1,23 @@
 module Main
 where
 import           Data.RTree
-import           Data.RTree.MBB
+import           Data.RTree.MBB hiding (mbb)
+
+
+-- import qualified Data.Set as S
 
 import           Prelude                              hiding (lookup, map, null, length)
-import qualified Data.List as L (map)
+import           Data.Function (on)
+import           Data.List ((\\))
+import qualified Data.List as L (map, length)
+import           Control.Applicative ((<$>))
+
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.Framework.Providers.QuickCheck2
 import           Test.HUnit                           hiding (Test, Testable)
 import           Text.Show.Functions                  ()
 
-import           Control.Applicative ((<$>))
 
 import Graphics.Gnuplot.Simple
 
@@ -21,23 +27,136 @@ main :: IO ()
 main = do
     defaultMain
        [
---        , testCase "lookuprange" test_range
+             testCase "test_null" test_null
+           , testCase "test_singleton" test_singleton
+           , testCase "test_insert" test_insert
+           , testCase "test_lookup" test_lookup
+           , testCase "test_lookupRange" test_lookupRange
+           , testCase "test_union" test_union
+           , testCase "test_length" test_length
+           , testCase "test_keys" test_keys
+           , testCase "test_values" test_values
 --       , testProperty "map a StringMap" prop_map
 
        ]
+-- ------------------------
+t_mbb1, t_mbb2 , t_mbb3, t_mbb4, t_mbb5, t_mbb6 :: MBB
+t_mbb1 = (MBB 0.0 0.0 1.0 1.0)
+t_mbb2 = (MBB 5.0 0.0 6.0 1.0)
+t_mbb3 = (MBB 1.0 2.0 2.0 3.0)
+t_mbb4 = (MBB 6.0 2.0 7.0 3.0)
+t_mbb5 = (MBB 3.0 3.0 4.0 4.0)
+t_mbb6 = (MBB 0.0 0.0 0.0 0.0)
 
-
-t_mbb1, t_mbb2 , t_mbb3, t_mbb4:: MBB
-t_mbb1 = (mbb 0.0 0.0 1.0 1.0)
-t_mbb2 = (mbb 5.0 0.0 6.0 1.0)
-t_mbb3 = (mbb 1.0 2.0 2.0 3.0)
-t_mbb4 = (mbb 6.0 2.0 7.0 3.0)
-t_1, t_2, t_3, t_4 :: RTree String
+t_1, t_2, t_3, t_4, t_5, t_6 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
-t_5 = fromList [(t_mbb1, "a"), (t_mbb2, "b"),(t_mbb3, "c"),(t_mbb4, "d")]
+t_5 = singleton t_mbb5 "e"
+t_6 = singleton t_mbb6 "f"
+
+u_1, u_2 :: [(MBB, String)]
+u_1 = [(t_mbb1, "a"), (t_mbb2, "b"),(t_mbb3, "c"),(t_mbb4, "d")]
+u_2 = [(t_mbb5, "e"), (t_mbb6, "f")] ++ u_1
+
+tu_1, tu_2 :: RTree String
+tu_1 = fromList u_1
+tu_2 = fromList u_2
+
+-- ------------------------
+eqRt :: (Show a, Eq a) => RTree a -> RTree a -> Assertion
+eqRt r1 r2 = [] @=? (on (\\) toList r1 r2)
+-- ------------------------
+
+test_null :: Assertion
+test_null = do
+    null empty @?= True
+    null t_1 @?= False
+
+test_singleton :: Assertion
+test_singleton = do
+    t_1 `eqRt` t_1
+    length t_1 @?= 1
+    keys t_1 @?= [t_mbb1]
+    values t_1 @?= ["a"]
+
+test_insert :: Assertion
+test_insert = do
+    insert t_mbb2 "b" t_1  `eqRt` fromList [(t_mbb1, "a"), (t_mbb2, "b")]
+    insert t_mbb1 "a" t_2  `eqRt` fromList [(t_mbb1, "a"), (t_mbb2, "b")]
+    insert t_mbb1 "a+" t_1 `eqRt` fromList [(t_mbb1, "a+")]
+    insert t_mbb1 "a" empty `eqRt` t_1
+    insert t_mbb5 "e" (fromList u_1) `eqRt` fromList (u_1 ++ [(t_mbb5, "e")])
+    insert t_mbb6 "f" (fromList u_1) `eqRt` fromList (u_1 ++ [(t_mbb6, "f")])
+
+test_lookup :: Assertion
+test_lookup = do
+    lookup t_mbb3 t_3 @?= Just "c"
+    lookup t_mbb1 tu_1 @?= Just "a"
+    lookup t_mbb2 tu_2 @?= Just "b"
+    lookup t_mbb3 tu_2 @?= Just "c"
+    lookup t_mbb4 tu_2 @?= Just "d"
+    lookup t_mbb5 tu_2 @?= Just "e"
+    lookup t_mbb6 tu_2 @?= Just "f"
+
+    lookup t_mbb1 empty @?= (Nothing :: Maybe ())
+    lookup t_mbb6 (fromList u_1) @?= Nothing
+
+
+test_lookupRange :: Assertion
+test_lookupRange = do
+    lookupRange t_mbb3 t_3 @?= ["c"]
+    lookupRange t_mbb1 tu_1 @?= ["a"]
+    lookupRange t_mbb2 tu_2 @?= ["b"]
+    lookupRange t_mbb3 tu_2 @?= ["c"]
+    lookupRange t_mbb4 tu_2 @?= ["d"]
+    lookupRange t_mbb5 tu_2 @?= ["e"]
+    lookupRange t_mbb6 tu_2 @?= ["f"]
+
+    lookupRange (MBB 1.0 1.0 7.0 3.0) tu_2 @?= ["c", "d"]
+    lookupRange (MBB 0.0 0.0 1.0 1.0) tu_2 @?= ["f", "a"]
+    lookupRange (MBB 0.0 0.0 7.0 4.0) tu_2 @?= ["e","c","f","a","b","d"] -- todo order irrelevant
+
+
+test_union :: Assertion
+test_union = do
+    union empty empty `eqRt` (empty :: RTree ())
+    union tu_2 tu_1 `eqRt` tu_2
+
+
+test_length :: Assertion
+test_length = do
+    length empty @?= 0
+    length t_1   @?= 1
+    length tu_2  @?= L.length u_2
+
+test_keys :: Assertion
+test_keys = do
+    keys empty @?= []
+    keys t_1   @?= [t_mbb1]
+    keys tu_2  @?= fst <$> u_2
+
+test_values :: Assertion
+test_values = do
+    values empty @?= ([] :: [()])
+    values t_1   @?= ["a"]
+    values tu_2  @?= snd <$> u_2
+
+--test_delete :: Assertion
+-- test_delete = do
+
+{-
+test_fromList :: Assertion
+test_toList :: Assertion
+test_delete :: Assertion
+-}
+
+
+
+
+-- -------------------------
+
 {- t_p = node (mbb 6469.0 9103.0 6656.0 9721.0) [
     Leaf {getmbb = (mbb 6469.0 9103.0 6469.0 9721.0), getElem = ()},
     Leaf {getmbb = (mbb 6786.0 9678.0 6656.0 9651.0), getElem = ()},
@@ -73,4 +192,5 @@ testData p = do
     return $ fromList pairs
     where
         listToMBB :: [Double] -> MBB
-        listToMBB [ulx, uly, brx, bry] = mbb ulx uly brx bry
+        listToMBB [ulx, uly, brx, bry] = MBB ulx uly brx bry
+        listToMBB xs = error $ "invalid data " ++ show xs
