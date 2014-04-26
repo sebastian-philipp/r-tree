@@ -1,4 +1,7 @@
 module Main
+(
+    main
+)
 where
 import           Data.RTree
 import           Data.RTree.MBB hiding (mbb)
@@ -36,6 +39,7 @@ main = do
            , testCase "test_length" test_length
            , testCase "test_keys" test_keys
            , testCase "test_values" test_values
+           , testCase "test_delete" test_delete
 --       , testProperty "map a StringMap" prop_map
 
        ]
@@ -66,7 +70,10 @@ tu_2 = fromList u_2
 
 -- ------------------------
 eqRt :: (Show a, Eq a) => RTree a -> RTree a -> Assertion
-eqRt r1 r2 = [] @=? (on (\\) toList r1 r2)
+eqRt = eqList `on` toList
+
+eqList :: (Show a, Eq a) => [a] -> [a] -> Assertion
+eqList l1 l2 = [] @=? (l1 \\ l2)
 -- ------------------------
 
 test_null :: Assertion
@@ -135,16 +142,29 @@ test_keys :: Assertion
 test_keys = do
     keys empty @?= []
     keys t_1   @?= [t_mbb1]
-    keys tu_2  @?= fst <$> u_2
+    keys tu_2  `eqList` (fst <$> u_2)
 
 test_values :: Assertion
 test_values = do
     values empty @?= ([] :: [()])
     values t_1   @?= ["a"]
-    values tu_2  @?= snd <$> u_2
+    values tu_2  `eqList` (snd <$> u_2)
 
---test_delete :: Assertion
--- test_delete = do
+test_delete :: Assertion
+test_delete = do
+    let d1 = delete (MBB 3.0 3.0 4.0 4.0) tu_2
+    values d1 @?= ["c","f","a","b","d"]
+    let d2 = delete (MBB 1.0 2.0 2.0 3.0) d1
+    values d2 @?= ["f","a","b","d"]
+    let d3 = delete (MBB 0.0 0.0 0.0 0.0) d2
+    values d3 @?= ["a","b","d"]
+    let d4 = delete (MBB 5.0 0.0 6.0 1.0) d3
+    values d4 @?= ["a","d"]
+    let d5 = delete (MBB 0.0 0.0 1.0 1.0) d4
+    values d5 @?= ["d"]
+    let d6 = delete (MBB 6.0 2.0 7.0 3.0) d5
+    values d6 @?= []
+
 
 {-
 test_fromList :: Assertion
