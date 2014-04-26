@@ -1,7 +1,7 @@
 R-Trees (and in the future also R*-Trees)
 ====================
 
-R-Tree is a spartial data structure similar to Quadtrees or B-Trees.
+R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
 
 An R-Tree is a balanced tree and optimized for lookups. This implemetation useses an R-Tree to privide
 a map to arbitrary values.
