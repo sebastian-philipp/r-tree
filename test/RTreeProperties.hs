@@ -3,7 +3,7 @@ module Main
     main
 )
 where
-import           Data.RTree
+import           Data.RTree.Base
 import           Data.RTree.MBB hiding (mbb)
 
 
