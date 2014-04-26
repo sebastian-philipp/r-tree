@@ -1,5 +1,5 @@
 name:                data-r-tree
-version:             0.0.1.0
+version:             0.0.2.0
 synopsis:            R-Tree is a spartial data structure similar to Quadtrees or B-Trees.
 description:         R-Tree is a spartial data structure similar to Quadtrees or B-Trees.
   

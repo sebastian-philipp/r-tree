@@ -34,6 +34,7 @@ module Data.RTree
     union,
     lookup,
     lookupRange,
+    lookupRangeWithKey,
     fromList,
     toList,
     delete,

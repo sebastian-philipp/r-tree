@@ -35,6 +35,7 @@ main = do
            , testCase "test_insert" test_insert
            , testCase "test_lookup" test_lookup
            , testCase "test_lookupRange" test_lookupRange
+           , testCase "test_lookupRangeWithKey" test_lookupRangeWithKey
            , testCase "test_union" test_union
            , testCase "test_length" test_length
            , testCase "test_keys" test_keys
@@ -125,6 +126,17 @@ test_lookupRange = do
     lookupRange (MBB 0.0 0.0 1.0 1.0) tu_2 @?= ["f", "a"]
     lookupRange (MBB 0.0 0.0 7.0 4.0) tu_2 @?= ["e","c","f","a","b","d"] -- todo order irrelevant
 
+test_lookupRangeWithKey :: Assertion
+test_lookupRangeWithKey = do
+    lookupRangeWithKey t_mbb3 t_3 @?= [(t_mbb3, "c")]
+    lookupRangeWithKey t_mbb1 tu_1 @?= [(t_mbb1, "a")]
+    lookupRangeWithKey t_mbb2 tu_2 @?= [(t_mbb2, "b")]
+    lookupRangeWithKey t_mbb3 tu_2 @?= [(t_mbb3, "c")]
+    lookupRangeWithKey t_mbb4 tu_2 @?= [(t_mbb4, "d")]
+
+    lookupRangeWithKey (MBB 1.0 1.0 7.0 3.0) tu_2 @?= [(t_mbb3, "c"), (t_mbb4, "d")]
+    lookupRangeWithKey (MBB 0.0 0.0 1.0 1.0) tu_2 @?= [(t_mbb6, "f"), (t_mbb1, "a")]
+    lookupRangeWithKey (MBB 0.0 0.0 7.0 4.0) tu_2 `eqList` u_2 -- todo order irrelevant
 
 test_union :: Assertion
 test_union = do

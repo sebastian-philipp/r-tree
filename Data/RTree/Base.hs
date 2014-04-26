@@ -24,6 +24,7 @@ module Data.RTree.Base
     union,
     lookup,
     lookupRange,
+    lookupRangeWithKey,
     fromList,
     toList,
     delete,
@@ -274,18 +275,21 @@ lookup mbb t = case founds of
     matches = filter (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
     founds = catMaybes $ map (lookup mbb) matches
 
--- | returns all values, which are located in the given bounding box. 
-lookupRange :: MBB -> RTree a -> [a]
-lookupRange _ Empty = []
-lookupRange mbb t@Leaf{}
-    | mbb `containsMBB` (getMBB t) = [getElem t]
+-- | returns all keys and values, which are located in the given bounding box. 
+lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
+lookupRangeWithKey _ Empty = []
+lookupRangeWithKey mbb t@Leaf{}
+    | mbb `containsMBB` (getMBB t) = [(getMBB t, getElem t)]
     | otherwise = []
-lookupRange mbb t = founds
+lookupRangeWithKey mbb t = founds
     where
     matches = filter intersectRTree $ getChildren t
-    founds = concatMap (lookupRange mbb) matches
+    founds = concatMap (lookupRangeWithKey mbb) matches
     intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
 
+-- | returns all values, which are located in the given bounding box. 
+lookupRange :: MBB -> RTree a -> [a]
+lookupRange mbb t = snd <$> (lookupRangeWithKey mbb t)
 -- -----------
 -- delete
 
