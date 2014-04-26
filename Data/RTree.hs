@@ -42,6 +42,7 @@ module Data.RTree
     null,
     keys,
     values,
+    mapMaybe
 
 ) where
 
