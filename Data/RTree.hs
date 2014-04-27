@@ -1,49 +1,57 @@
 {- |
-  Module     : Data.RTree
-  Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
-  License    : MIT
+    Module     : Data.RTree
+    Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
+    License    : MIT
 
-  Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
-  Stability  : experimental
-  Portability: not portable
+    Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
+    Stability  : experimental
+    Portability: not portable
 
-  R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
-  
-  An R-Tree is a balanced tree and optimized for lookups. This implemetation useses an R-Tree to privide
-  a map to arbitrary values.
+    R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
 
-  Some function names clash with "Prelude" names, therefore this module is usually
-  imported @qualified@, e.g.
+    An R-Tree is a balanced tree and optimized for lookups. This implemetation useses an R-Tree to privide
+    a map to arbitrary values.
 
-  > import           Data.RTree (RTree)
-  > import qualified Data.RTree as RT
+    Some function names clash with "Prelude" names, therefore this module is usually
+    imported @qualified@, e.g.
 
-  this implemetation is incomplete at the moment. Feel free to send comments, patches or merge requests.
+    > import           Data.RTree (RTree)
+    > import qualified Data.RTree as RT
+
+    this implemetation is incomplete at the moment. Feel free to send comments, patches or merge requests.
 
 -}
 
 
 module Data.RTree 
 (
-    MBB.MBB,
-    MBB.mbb,
-    RTree,
-    empty,
-    singleton,
-    insert,
-    union,
-    lookup,
-    lookupRange,
-    lookupRangeWithKey,
-    fromList,
-    toList,
-    delete,
-    length,
-    null,
-    keys,
-    values,
-    mapMaybe
-
+    -- * 'MBB'
+    MBB.MBB
+    , MBB.mbb
+    -- * Data Type
+    , RTree
+    -- * Constructors
+    , empty
+    , singleton
+    -- * Modification
+    , insert
+    , insertWith
+    , delete
+    , mapMaybe
+    -- ** Merging
+    , union
+    , unionWith
+    -- * Searching and Properties
+    , lookup
+    , lookupRange
+    , lookupRangeWithKey
+    , length
+    , null
+    , keys
+    , values
+    -- * Lists
+    , fromList
+    , toList
 ) where
 
 import Prelude ()

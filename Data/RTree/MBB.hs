@@ -22,11 +22,14 @@ module Data.RTree.MBB
     area,
     containsMBB,
     unionMBB,
+    unionsMBB,
     intersectMBB
 )
 where
 
 import Data.Binary
+import Data.Monoid
+
 import GHC.Generics (Generic)  
 
 -- | Minimal bounding box
@@ -43,11 +46,13 @@ mbb :: Double -- ^ x - coordinate of first point
 mbb = MBB
 
 -- | internal only.
-unionMBB :: [MBB] -> MBB
-unionMBB [] = error "unionMBB': []"
-unionMBB xs = foldr1 f xs
-    where
-    f (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry') = MBB (min ulx ulx') (min uly uly') (max brx brx') (max bry bry')
+unionsMBB :: [MBB] -> MBB
+unionsMBB [] = error "unionsMBB': []"
+unionsMBB xs = foldr1 unionMBB xs
+
+-- | unifies two MBBs into one
+unionMBB :: MBB -> MBB -> MBB
+unionMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry') = MBB (min ulx ulx') (min uly uly') (max brx brx') (max bry bry')
 
 -- | calculates the area of the rect
 area :: MBB -> Double
@@ -73,3 +78,9 @@ instance Show MBB where
   show (MBB ulx uly brx bry) = concat ["mbb ", show ulx, " ", show uly, " ", show brx, " ", show bry]
 
 instance Binary MBB
+
+-- | mconcat will fail for empty lists. 
+instance Monoid MBB where
+  mempty = MBB 0.0 0.0 0.0 0.0
+  mappend = unionMBB
+  mconcat = unionsMBB

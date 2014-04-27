@@ -37,10 +37,12 @@ main = do
            , testCase "test_lookupRange" test_lookupRange
            , testCase "test_lookupRangeWithKey" test_lookupRangeWithKey
            , testCase "test_union" test_union
+           , testCase "test_unionWith" test_unionWith
            , testCase "test_length" test_length
            , testCase "test_keys" test_keys
            , testCase "test_values" test_values
            , testCase "test_delete" test_delete
+           , testCase "test_fromList" test_fromList
 --       , testProperty "map a StringMap" prop_map
 
        ]
@@ -143,6 +145,11 @@ test_union = do
     union empty empty `eqRt` (empty :: RTree ())
     union tu_2 tu_1 `eqRt` tu_2
 
+test_unionWith :: Assertion
+test_unionWith = do
+    unionWith undefined empty empty `eqRt` (empty :: RTree ())
+    unionWith (++) tu_2 tu_1 `eqRt` (fromList [(t_mbb1,"aa"),(t_mbb2,"bb"),(t_mbb3,"cc"),(t_mbb4,"dd"),(t_mbb5,"e"),(t_mbb6,"f")]) -- tu_2
+
 
 test_length :: Assertion
 test_length = do
@@ -177,9 +184,12 @@ test_delete = do
     let d6 = delete (MBB 6.0 2.0 7.0 3.0) d5
     values d6 @?= []
 
+test_fromList :: Assertion
+test_fromList = do
+    fromList [] `eqRt` (empty :: RTree ())
 
 {-
-test_fromList :: Assertion
+
 test_toList :: Assertion
 test_delete :: Assertion
 -}

@@ -2,49 +2,56 @@
 {-# LANGUAGE DeriveGeneric #-}
 
 {- |
-  Module     : Data.RTree.Base
-  Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
-  License    : MIT
+    Module     : Data.RTree.Base
+    Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
+    License    : MIT
 
-  Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
-  Stability  : experimental
-  Portability: not portable
+    Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
+    Stability  : experimental
+    Portability: not portable
 
-  Internal implementations. Use Data.RTree instead
-
+    Internal implementations. Use Data.RTree instead
 -}
 
 
 module Data.RTree.Base
 (
-    RTree,
-    empty,
-    singleton,
-    insert,
-    union,
-    lookup,
-    lookupRange,
-    lookupRangeWithKey,
-    fromList,
-    toList,
-    delete,
-    length,
-    null,
-    keys,
-    values,
-    mapMaybe,
-    foldWithMBB,
-    getMBB,
+    -- * Data Type
+    RTree
+    -- * Constructors
+    , empty
+    , singleton
+    -- * Modification
+    , insert
+    , insertWith
+    , delete
+    , mapMaybe
+    -- ** Merging
+    , union
+    , unionWith
+    -- * Searching and Properties
+    , lookup
+    , lookupRange
+    , lookupRangeWithKey
+    , length
+    , null
+    , keys
+    , values
+    -- * Lists
+    , fromList
+    , toList
 
-    -- | testing
-
-    pp,
-    isValid,
-    unionDistinct,
-    getC1,
-    getC2,
-    getC3,
-    getC4
+    -- * Internal and Testing
+    , foldWithMBB
+    , getMBB
+    , pp
+    , isValid
+    , unionDistinct
+    , unionDistinctWith
+    , getC1
+    , getC2
+    , getC3
+    , getC4
 )
 where
 
@@ -56,6 +63,7 @@ import           Data.List (maximumBy, minimumBy, partition)
 import qualified Data.List as L (length)
 import           Data.Maybe (catMaybes, isJust)
 import qualified Data.Maybe as Maybe (mapMaybe)
+import           Data.Monoid (Monoid, mempty, mappend)
 import           Data.Typeable (Typeable)
 
 import           Control.Applicative ((<$>))
@@ -80,7 +88,7 @@ n = 4
 
 
 unionMBB' :: RTree a -> RTree a -> MBB
-unionMBB' x y = unionMBB [getMBB x, getMBB y]
+unionMBB' = unionMBB `on` getMBB
 
 -- ---------------
 -- smart constuctors
@@ -108,7 +116,7 @@ node _   []        = error "node: empty"
 node mbb xs        = Node mbb xs
 
 createNodeWithChildren :: [RTree a] -> RTree a
-createNodeWithChildren c = node (unionMBB $ getMBB <$> c) c
+createNodeWithChildren c = node (unionsMBB $ getMBB <$> c) c
 
 norm :: RTree a -> RTree a
 norm (Node4 mbb x y z w) = Node mbb [x,y,z,w]
@@ -129,7 +137,7 @@ fromList :: [(MBB, a)] -> RTree a
 fromList l = fromList' $ (uncurry singleton) <$> l
 
 fromList' :: [RTree a] -> RTree a
-fromList' [] = error "fromList' empty"
+fromList' [] = empty
 fromList' ts = foldr1 unionDistinct ts
 
 -- | creates a list of pairs out of a  tree
@@ -162,35 +170,55 @@ values = foldWithMBB handleLeaf handleNode []
 -- ----------------------------------
 -- insert 
 
--- | inserts an element whith the given 'MBB' and a value in a tree
-insert :: MBB -> a -> RTree a -> RTree a
-insert mbb e oldRoot = unionDistinct (singleton mbb e) oldRoot
+-- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
+insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
+insertWith f mbb e oldRoot = unionDistinctWith f (singleton mbb e) oldRoot
 
--- | unifies left and right RTeee. Works only, if they don't contain common keys. Much faster than union, though. 
-unionDistinct :: RTree a -> RTree a -> RTree a
-unionDistinct Empty{} t           = t
-unionDistinct t       Empty{}     = t
-unionDistinct t1@Leaf{} t2@Leaf{}
-    | on (==) getMBB t1 t2 = t1
-    | otherwise = createNodeWithChildren [t1, t2] -- root case
-unionDistinct left right
-    | depth left > depth right              = unionDistinct right left
+-- | Inserts an element whith the given 'MBB' and a value in a tree. An existing value will be overwritten with the given one.
+--
+-- prop> insert = insertWith const
+insert :: MBB -> a -> RTree a -> RTree a
+insert = insertWith const
+
+simpleMergeEqNode :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
+simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) (on f getElem l r)
+simpleMergeEqNode _ l _ = l
+
+-- | Únifies left and right RTeee. Will create invalid trees, if the tree is not a leaf and contains "MBB"s which
+--  also exists in the left tree. Much faster than union, though. 
+unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
+unionDistinctWith _ Empty{} t           = t
+unionDistinctWith _ t       Empty{}     = t
+unionDistinctWith f t1@Leaf{} t2@Leaf{}
+    | on (==) getMBB t1 t2              = simpleMergeEqNode f t1 t2
+    | otherwise                         = createNodeWithChildren [t1, t2] -- root case
+unionDistinctWith f left right
+    | depth left > depth right              = unionDistinctWith f right left
     | depth left == depth right             = fromList' $ (getChildren left) ++ [right]
-    | (L.length $ getChildren newNode) > n = createNodeWithChildren $ splitNode newNode
+    | (L.length $ getChildren newNode) > n  = createNodeWithChildren $ splitNode newNode
     | otherwise                             = newNode
     where
-    newNode = addLeaf left right
+    newNode = addLeaf f left right
 
-addLeaf :: RTree a -> RTree a -> RTree a
-addLeaf left right 
-    | depth left + 1 == depth right = node (left `unionMBB'` right) (left : nonEq)
+-- | Únifies left and right RTeee. Will create invalid trees, if the tree is not a leaf and contains "MBB"s which
+--  also exists in the left tree. Much faster than union, though. 
+unionDistinct :: RTree a -> RTree a -> RTree a
+unionDistinct = unionDistinctWith const
+
+addLeaf :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
+addLeaf f left right 
+    | depth left + 1 == depth right = node (newNode `unionMBB'` right) (newNode : nonEq)
     | otherwise                     = node (left `unionMBB'` right) newChildren
     where
-    newChildren = findNodeWithMinimalAreaIncrease left (getChildren right)
+    newChildren = findNodeWithMinimalAreaIncrease f left (getChildren right)
     (eq, nonEq) = partition (on (==) getMBB left) $ getChildren right
+    newNode = case eq of
+        [] -> left
+        [x] -> simpleMergeEqNode f left x
+        _ -> error "addLeaf: invalid RTree"
 
-findNodeWithMinimalAreaIncrease :: RTree a -> [RTree a] -> [RTree a]
-findNodeWithMinimalAreaIncrease leaf children = splitMinimal xsAndIncrease
+findNodeWithMinimalAreaIncrease :: (a -> a -> a) -> RTree a -> [RTree a] -> [RTree a]
+findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
     where
 --  xsAndIncrease :: [(RTree a, Double)]    
     xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
@@ -198,15 +226,15 @@ findNodeWithMinimalAreaIncrease leaf children = splitMinimal xsAndIncrease
 --  xsAndIncrease' :: [(RTree a, Double)]   
     splitMinimal [] = []
     splitMinimal ((t,mbb):xs)
-        | mbb == minimalIncrease = unionDistinctSplit leaf t ++ (fst <$> xs)
+        | mbb == minimalIncrease = unionDistinctSplit f leaf t ++ (fst <$> xs)
         | otherwise            = t : splitMinimal xs
 
-unionDistinctSplit :: RTree a -> RTree a -> [RTree a]
-unionDistinctSplit leaf e
+unionDistinctSplit :: (a -> a -> a) -> RTree a -> RTree a -> [RTree a]
+unionDistinctSplit f leaf e
     | (L.length $ getChildren newLeaf) > n = splitNode newLeaf
     | otherwise = [newLeaf]
     where
-    newLeaf = addLeaf leaf e
+    newLeaf = addLeaf f leaf e
 
 -- | /O(n²)/ solution
 splitNode :: RTree a -> [RTree a]
@@ -290,6 +318,7 @@ lookupRangeWithKey mbb t = founds
 -- | returns all values, which are located in the given bounding box. 
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange mbb t = snd <$> (lookupRangeWithKey mbb t)
+
 -- -----------
 -- delete
 
@@ -330,12 +359,19 @@ foldWithMBB _ _ n' Empty    = n'
 foldWithMBB f _ _ t@Leaf{} = f (getMBB t) (getElem t)
 foldWithMBB f g n' t        = g (getMBB t) $ foldWithMBB f g n' <$> (getChildren t)
 
--- | unifies the first and the second tree into one.
+-- | Unifies the first and the second tree into one. The combining function is used for elemets which exists in both trees.
+unionWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
+unionWith _ Empty Empty = Empty
+unionWith f t1 t2
+    | depth t1 <= depth t2 = foldr (uncurry (insertWith f)) t2 (toList t1)
+    | otherwise            = unionWith f t2 t1
+
+-- | Unifies the first and the second tree into one.
+-- If an 'MBB' is a key in both trees, the value from the left tree is chosen. 
+--
+-- prop> union = unionWith const
 union :: RTree a -> RTree a -> RTree a
-union Empty Empty = Empty
-union t1 t2
-    | depth t1 <= depth t2 = foldr (uncurry insert) t2 (toList t1)
-    | otherwise            = union t2 t1
+union = unionWith const
 
 -- | map, which also filters Nothing values
 mapMaybe :: (a -> Maybe b) -> RTree a -> RTree b
@@ -407,3 +443,7 @@ instance NFData a => NFData (RTree a) where
 
 
 instance  (Binary a) => Binary (RTree a)
+
+instance (Monoid a) => Monoid (RTree a) where
+    mempty = empty
+    mappend = unionWith mappend
