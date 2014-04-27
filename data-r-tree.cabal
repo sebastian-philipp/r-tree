@@ -11,7 +11,7 @@ license-file:        LICENSE
 author:              Sebastian Philipp, Birte Wagner
 maintainer:          sebastian@spawnhost.de
 copyright:           Sebastian Philipp, Birte Wagner
-category:            Data
+category:            Data Structures
 build-type:          Simple
 
 -- extra-source-files:  
