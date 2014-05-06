@@ -28,7 +28,6 @@ module Data.RTree.MBB
 where
 
 import Data.Binary
-import Data.Monoid
 
 import GHC.Generics (Generic)  
 
@@ -78,9 +77,3 @@ instance Show MBB where
   show (MBB ulx uly brx bry) = concat ["mbb ", show ulx, " ", show uly, " ", show brx, " ", show bry]
 
 instance Binary MBB
-
--- | mconcat will fail for empty lists. 
-instance Monoid MBB where
-  mempty = MBB 0.0 0.0 0.0 0.0
-  mappend = unionMBB
-  mconcat = unionsMBB

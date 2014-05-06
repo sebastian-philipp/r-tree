@@ -143,7 +143,9 @@ test_lookupRangeWithKey = do
 test_union :: Assertion
 test_union = do
     union empty empty `eqRt` (empty :: RTree ())
-    union tu_2 tu_1 `eqRt` tu_2
+    union tu_2 tu_1   `eqRt` tu_2
+    union t_1 empty   `eqRt` t_1
+    union empty t_1   `eqRt` t_1
 
 test_unionWith :: Assertion
 test_unionWith = do

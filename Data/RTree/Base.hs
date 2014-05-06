@@ -82,6 +82,7 @@ data RTree a =
     | Empty
     deriving (Show, Eq, Functor, Typeable, Generic)
 
+-- | It is possible, to change these constants, but the tree won't be space optimal anymore.
 m, n :: Int
 m = 2
 n = 4
@@ -361,7 +362,8 @@ foldWithMBB f g n' t        = g (getMBB t) $ foldWithMBB f g n' <$> (getChildren
 
 -- | Unifies the first and the second tree into one. The combining function is used for elemets which exists in both trees.
 unionWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
-unionWith _ Empty Empty = Empty
+unionWith _ l     Empty    = l
+unionWith _ Empty r        = r
 unionWith f t1 t2
     | depth t1 <= depth t2 = foldr (uncurry (insertWith f)) t2 (toList t1)
     | otherwise            = unionWith f t2 t1
@@ -384,6 +386,7 @@ mapMaybe f t = fromList $ Maybe.mapMaybe func $ toList t
 -- ---------------
 
 isValid :: Show b => b -> RTree a -> Bool
+isValid _ Empty = True
 isValid _ Leaf{} = True
 isValid context x = case L.length c >= m && L.length c <= n && (and $ (isValid context) <$> c) && (isBalanced x) of
     True -> True
@@ -422,7 +425,8 @@ pp' i (Node4 mbb c1 c2 c3 c4) = do
 -- ----------------------
 
 depth :: RTree a -> Int
-depth (Leaf _ _ ) = 0
+depth Empty = 0
+depth (Leaf _ _ ) = 1
 depth t = 1 + (depth $ head $ getChildren t)
 
 -- | returns the number of elements in a tree
