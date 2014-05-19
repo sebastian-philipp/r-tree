@@ -10,7 +10,7 @@
     Stability  : experimental
     Portability: not portable
 
-    Internal implementations. Use Data.RTree instead
+    Internal implementations. Use 'Data.RTree' instead or use at you own risc.
 -}
 
 
@@ -98,7 +98,7 @@ unionMBB' = unionMBB `on` getMBB
 empty :: RTree a
 empty = Empty
 
--- | returns True, if empty
+-- | returns 'True', if empty
 --
 -- prop> null empty = True
 null :: RTree a -> Bool
@@ -141,7 +141,7 @@ fromList' :: [RTree a] -> RTree a
 fromList' [] = empty
 fromList' ts = foldr1 unionDistinct ts
 
--- | creates a list of pairs out of a  tree
+-- | creates a list of pairs out of a tree
 --
 -- prop> toList t = zip (keys t) (values t)
 toList :: RTree a -> [(MBB, a)]
@@ -185,7 +185,7 @@ simpleMergeEqNode :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) (on f getElem l r)
 simpleMergeEqNode _ l _ = l
 
--- | Únifies left and right RTeee. Will create invalid trees, if the tree is not a leaf and contains "MBB"s which
+-- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
 --  also exists in the left tree. Much faster than union, though. 
 unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionDistinctWith _ Empty{} t           = t
@@ -201,7 +201,7 @@ unionDistinctWith f left right
     where
     newNode = addLeaf f left right
 
--- | Únifies left and right RTeee. Will create invalid trees, if the tree is not a leaf and contains "MBB"s which
+-- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB'"'s which
 --  also exists in the left tree. Much faster than union, though. 
 unionDistinct :: RTree a -> RTree a -> RTree a
 unionDistinct = unionDistinctWith const
