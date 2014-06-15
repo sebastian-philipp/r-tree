@@ -48,13 +48,23 @@ module Data.RTree.Base
     , unionDistinct
     , unionDistinctWith
     , fromList'
+    , unionDistinctSplit
+    , depth
+    , areaIncreasesWith
+    , partition
+    , getChildren
+    , unionMBB'
+    , createNodeWithChildren
+    , n
+    , splitNode
+    , node
 )
 where
 
 import           Prelude hiding (lookup, length, null)
 
 import           Data.Binary
-import           Data.Function
+import           Data.Function (on)
 import           Data.List (maximumBy, minimumBy, partition)
 import qualified Data.List as L (length)
 import           Data.Maybe (catMaybes, isJust)
@@ -182,7 +192,7 @@ simpleMergeEqNode :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) (on f getElem l r)
 simpleMergeEqNode _ l _ = l
 
--- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
+-- | Unifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
 --  also exists in the left tree. Much faster than union, though. 
 unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionDistinctWith _ Empty{} t           = t

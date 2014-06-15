@@ -9,7 +9,7 @@ where
 import           Prelude                              hiding (lookup, map, mapM,
                                                        null, succ)
 
-import           Control.Arrow                        (second)
+--import           Control.Arrow                        (second)
 import           Control.Applicative ((<$>), (<*>))
 import           Control.DeepSeq                      (($!!))
 
@@ -77,6 +77,9 @@ main = defaultMain
        , testCase "t_1" (checkIsNF t_1)
        , testCase "tu_1" (checkIsNF tu_1)
        , testCase "tu_2" (checkIsNF tu_2)
+       , testCase "tu_2" (checkIsNF test_union)
+       , testCase "test_insertWith1" (checkIsNF test_insertWith1)
+       , testCase "test_insertWith" (checkIsNF test_insertWith)
        --, testCase "m1" (checkIsNF m1)
        --, testCase "m2" (checkIsNF m2)
        --, testCase "m3" (checkIsNF m3)
@@ -129,17 +132,15 @@ tu_1 = fromList u_1
 tu_2 = fromList u_2
 
 
---fromList' :: [(d, [Int])] -> [(d, Attr)]
---fromList' = fmap (second mkA)
+test_union :: RTree Attr
+test_union = unionWith mappend tu_1 t_6
 
---fromList'' :: [(a, Int)] -> [(a, Attr)]
---fromList'' = fmap (second $ mkA . return)
+test_insertWith1 :: RTree Attr
+test_insertWith1 = insertWith mappend t_mbb1 (mkA' 4) t_1
 
---fromList''' :: [Key] -> RTree Attr
---fromList''' = fromList . fromList'' . flip zip [1..]
+test_insertWith :: RTree Attr
+test_insertWith = insertWith mappend t_mbb6 (mkA' 6) tu_2
 
---l4 :: [(String, Attr)]
---l4 = fromList' [("a",[1]),("b",[2]),("c",[3]),("a",[2]),("ab",[22]),("a",[3])]
 
 
 --prop_simple :: Q.Property

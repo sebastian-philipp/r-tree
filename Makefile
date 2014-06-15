@@ -10,3 +10,6 @@ strict-test-dependencies:
 
 strict-test:
 	cabal configure -ftest-strict --enable-tests && cabal test
+
+cabal-repl-strict:
+	cabal repl strict
