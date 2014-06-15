@@ -14,7 +14,9 @@ copyright:           Sebastian Philipp, Birte Wagner
 category:            Data Structures
 build-type:          Simple
 
--- extra-source-files:  
+Extra-source-files:  changelog.md
+                     README.md
+
 cabal-version:       >=1.10
 
 bug-reports:         https://github.com/sebastian-philipp/r-tree/issues
