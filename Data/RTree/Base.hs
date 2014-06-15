@@ -17,7 +17,7 @@
 module Data.RTree.Base
 (
     -- * Data Type
-    RTree
+    RTree (..)
     -- * Constructors
     , empty
     , singleton
@@ -43,15 +43,11 @@ module Data.RTree.Base
 
     -- * Internal and Testing
     , foldWithMBB
-    , getMBB
     , pp
     , isValid
     , unionDistinct
     , unionDistinctWith
-    , getC1
-    , getC2
-    , getC3
-    , getC4
+    , fromList'
 )
 where
 
@@ -137,6 +133,7 @@ getChildren t = getChildren' $ norm t
 fromList :: [(MBB, a)] -> RTree a
 fromList l = fromList' $ (uncurry singleton) <$> l
 
+-- | merges all singletons into a single tree.
 fromList' :: [RTree a] -> RTree a
 fromList' [] = empty
 fromList' ts = foldr1 unionDistinct ts

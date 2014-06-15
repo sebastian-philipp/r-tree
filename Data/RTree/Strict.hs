@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns               #-}
 {- |
     Module     : Data.RTree.Strict
     Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
@@ -20,8 +21,8 @@
 module Data.RTree.Strict
 (
     -- * 'MBB'
-    MBB.MBB
-    , MBB.mbb
+    MBB
+    , mbb
     -- * Data Type
     , RTree
     -- * Constructors
@@ -48,7 +49,29 @@ module Data.RTree.Strict
     , toList
 ) where
 
-import Prelude ()
-import Data.RTree.Base
+import           Prelude hiding (lookup, length, null)
+import Data.RTree.Base hiding (singleton, fromList, insertWith)
 
-import qualified Data.RTree.MBB as MBB
+import           Control.Applicative ((<$>))
+import Data.RTree.MBB
+
+-- ---------------
+-- smart constuctors
+
+-- | creates a single element tree
+singleton :: MBB -> a -> RTree a
+singleton mbb !x = Leaf mbb x
+
+-- ----------------------------------
+-- Lists
+
+-- | creates a tree out of pairs
+fromList :: [(MBB, a)] -> RTree a
+fromList l = fromList' $ (uncurry singleton) <$> l
+-- ----------------------------------
+-- insert 
+
+-- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
+insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
+insertWith f mbb e oldRoot = unionDistinctWith f (singleton mbb e) oldRoot
+
