@@ -82,7 +82,7 @@ fromList' ts = foldr1 unionDistinct ts
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
 insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
-insertWith f mbb !e oldRoot = unionDistinctWith f (singleton mbb e) oldRoot
+insertWith f mbb e oldRoot = unionDistinctWith f (singleton mbb e) oldRoot
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. An existing value will be overwritten with the given one.
 --
