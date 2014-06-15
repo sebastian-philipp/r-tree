@@ -29,6 +29,8 @@ where
 
 import Data.Binary
 
+import Control.Applicative ((<$>), (<*>))
+
 import GHC.Generics (Generic)  
 
 -- | Minimal bounding box
@@ -38,10 +40,10 @@ data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Do
 -- | created a minimal bounding box (or a rectangle)
 -- The first point must be smaller, than the second one. This is unchecked.
 mbb :: Double -- ^ x - coordinate of first point
-  -> Double   -- ^ y - coordinate of first point
-  -> Double   -- ^ x - coordinate of second point
-  -> Double   -- ^ x - coordinate of second point
-  -> MBB
+    -> Double   -- ^ y - coordinate of first point
+    -> Double   -- ^ x - coordinate of second point
+    -> Double   -- ^ x - coordinate of second point
+    -> MBB
 mbb = MBB
 
 -- | internal only.
@@ -74,6 +76,9 @@ intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
  
 
 instance Show MBB where
-  show (MBB ulx uly brx bry) = concat ["mbb ", show ulx, " ", show uly, " ", show brx, " ", show bry]
+    show (MBB ulx uly brx bry) = concat ["mbb ", show ulx, " ", show uly, " ", show brx, " ", show bry]
 
-instance Binary MBB
+
+instance Binary MBB where
+    put (MBB ulx uly brx bry) = put ulx >> put uly >> put brx >> put bry
+    get = MBB <$> get <*> get <*> get <*> get

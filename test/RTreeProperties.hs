@@ -23,7 +23,7 @@ import           Test.HUnit                           hiding (Test, Testable)
 import           Text.Show.Functions                  ()
 
 
-import Graphics.Gnuplot.Simple
+--import Graphics.Gnuplot.Simple
 
 -- todo: write tests
 
@@ -215,6 +215,8 @@ t_pp = Leaf {getmbb = (mbb 6531.0 9103.0 6531.0 9721.0), getElem = ()}
 t_ppp = union t_pp t_p
 -}
 
+{-
+
 mbbToPath :: MBB -> [(Double, Double)]
 mbbToPath (MBB ulx uly brx bry) = [(ulx, uly),(brx, uly),(brx, bry),(ulx, bry),(ulx, uly)]
 
@@ -244,3 +246,4 @@ testData p = do
         listToMBB :: [Double] -> MBB
         listToMBB [ulx, uly, brx, bry] = MBB ulx uly brx bry
         listToMBB xs = error $ "invalid data " ++ show xs
+-}

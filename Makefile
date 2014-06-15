@@ -2,4 +2,11 @@ dependencies:
 	cabal install --dependencies-only
 
 sandbox:
-	canal sandbox init
+	cabal sandbox init
+
+
+strict-test-dependencies:
+	cabal install -ftest-strict --enable-tests --dependencies-only
+
+strict-test:
+	cabal configure -ftest-strict --enable-tests && cabal test
