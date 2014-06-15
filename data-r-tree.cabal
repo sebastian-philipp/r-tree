@@ -47,6 +47,7 @@ test-suite properties
   build-depends:
             data-r-tree
           , base                       == 4.*
+          , binary
           , HUnit                      >= 1.2
           , QuickCheck                 >= 2.4
           , test-framework             >= 0.6

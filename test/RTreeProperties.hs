@@ -10,6 +10,7 @@ import           Data.RTree.MBB hiding (mbb)
 -- import qualified Data.Set as S
 
 import           Prelude                              hiding (lookup, map, null, length)
+import           Data.Binary (encode, decode)
 import           Data.Function (on)
 import           Data.List ((\\))
 import qualified Data.List as L (map, length)
@@ -43,6 +44,7 @@ main = do
            , testCase "test_values" test_values
            , testCase "test_delete" test_delete
            , testCase "test_fromList" test_fromList
+           , testCase "test_binary" test_binary
 --       , testProperty "map a StringMap" prop_map
 
        ]
@@ -189,6 +191,10 @@ test_delete = do
 test_fromList :: Assertion
 test_fromList = do
     fromList [] `eqRt` (empty :: RTree ())
+
+test_binary :: Assertion
+test_binary = do
+    (decode $ encode $ tu_2) @?= tu_2
 
 {-
 

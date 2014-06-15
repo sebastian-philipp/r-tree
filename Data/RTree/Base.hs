@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable #-}
+{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable, BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 {- |
@@ -446,7 +446,25 @@ instance NFData a => NFData (RTree a) where
     rnf (Node4 _ c1 c2 c3 c4) = {-rnf m `seq`-} rnf c1 `seq` rnf c2 `seq` rnf c3 `seq` rnf c4
 
 
-instance  (Binary a) => Binary (RTree a)
+instance  (Binary a) => Binary (RTree a) where
+    put (Empty)         = put (0::Word8)
+    put (Leaf mbb e)    = put (1::Word8)  >> put mbb >> put e
+    put t               = put (2::Word8)  >> put (getMBB t) >> put (getChildren t)
+
+    get = do
+          !tag <- getWord8
+          case tag of
+                   0 -> return Empty
+                   1 -> do
+                        !mbb <- get
+                        !e <- get
+                        return $! Leaf mbb e
+                   2 -> do
+                        !mbb <- get
+                        !c <- get
+                        return $! node mbb c
+                   _ -> fail "RTree.get: error while decoding RTree"
+
 
 instance (Monoid a) => Monoid (RTree a) where
     mempty = empty
