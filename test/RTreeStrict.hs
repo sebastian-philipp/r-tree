@@ -10,7 +10,7 @@ import           Prelude                              hiding (lookup, map, mapM,
                                                        null, succ)
 
 --import           Control.Arrow                        (second)
-import           Control.Applicative ((<$>), (<*>))
+import           Control.Applicative ((<$>))
 import           Control.DeepSeq                      (($!!))
 
 import           Data.Monoid
@@ -23,12 +23,7 @@ import           GHC.AssertNF
 
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
-import           Test.Framework.Providers.QuickCheck2
 import           Test.HUnit                           hiding (Test, Testable)
-import qualified Test.QuickCheck                      as Q (Property, arbitrary)
-import qualified Test.QuickCheck.Monadic              as Q (PropertyM, assert,
-                                                            monadicIO, pick,
-                                                            run)
 
 newtype Attr = A [Int]
     deriving (Show)
@@ -80,6 +75,7 @@ main = defaultMain
        , testCase "tu_2" (checkIsNF test_union)
        , testCase "test_insertWith1" (checkIsNF test_insertWith1)
        , testCase "test_insertWith" (checkIsNF test_insertWith)
+       , testCase "test_map" (checkIsNF test_map)
        --, testCase "m1" (checkIsNF m1)
        --, testCase "m2" (checkIsNF m2)
        --, testCase "m3" (checkIsNF m3)
@@ -134,6 +130,9 @@ tu_2 = fromList u_2
 
 test_union :: RTree Attr
 test_union = unionWith mappend tu_1 t_6
+
+test_map :: RTree Attr
+test_map = fmap id tu_1
 
 test_insertWith1 :: RTree Attr
 test_insertWith1 = insertWith mappend t_mbb1 (mkA' 4) t_1

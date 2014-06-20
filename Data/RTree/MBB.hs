@@ -10,8 +10,8 @@
   Stability  : experimental
   Portability: not portable
 
-  This module provides a minimal bounding box. 
-  
+  This module provides a minimal bounding box.
+
 -}
 
 
@@ -31,7 +31,7 @@ import Data.Binary
 
 import Control.Applicative ((<$>), (<*>))
 
-import GHC.Generics (Generic)  
+import GHC.Generics (Generic)
 
 -- | Minimal bounding box
 data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
@@ -63,7 +63,7 @@ area (MBB ulx uly brx bry) = (brx - ulx) * (bry - uly)
 containsMBB :: MBB -> MBB -> Bool
 containsMBB (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
 
--- | returns the intersection of both mbbs. Returns Nothing, if they don't intersect. 
+-- | returns the intersection of both mbbs. Returns Nothing, if they don't intersect.
 intersectMBB :: MBB -> MBB -> Maybe MBB
 intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
     | ulx'' <= brx'' && uly'' <= bry'' = Just $ MBB ulx'' uly'' brx'' bry''
@@ -73,7 +73,7 @@ intersectMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry')
     uly'' = max uly uly'
     brx'' = min brx brx'
     bry'' = min bry bry'
- 
+
 
 instance Show MBB where
     show (MBB ulx uly brx bry) = concat ["mbb ", show ulx, " ", show uly, " ", show brx, " ", show bry]
