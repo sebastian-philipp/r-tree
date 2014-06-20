@@ -25,6 +25,7 @@ module Data.RTree.Base
     , insert
     , insertWith
     , delete
+    , map
     , mapMaybe
     -- ** Merging
     , union
@@ -61,12 +62,12 @@ module Data.RTree.Base
 )
 where
 
-import           Prelude hiding (lookup, length, null)
+import           Prelude hiding (lookup, length, null, map)
 
 import           Data.Binary
 import           Data.Function (on)
 import           Data.List (maximumBy, minimumBy, partition)
-import qualified Data.List as L (length)
+import qualified Data.List as L (length,map)
 import           Data.Maybe (catMaybes, isJust)
 import qualified Data.Maybe as Maybe (mapMaybe)
 import           Data.Monoid (Monoid, mempty, mappend)
@@ -79,14 +80,14 @@ import           GHC.Generics (Generic)
 
 import           Data.RTree.MBB hiding (mbb)
 
-data RTree a = 
+data RTree a =
       Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
     | Node3 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a) }
     | Node2 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a) }
     | Node  {getMBB ::                  MBB, getChildren' :: [RTree a] }
     | Leaf  {getMBB :: {-# UNPACK #-} ! MBB, getElem :: a}
     | Empty
-    deriving (Show, Eq, Functor, Typeable, Generic)
+    deriving (Show, Eq, Typeable, Generic)
 
 -- | It is possible, to change these constants, but the tree won't be space optimal anymore.
 m, n :: Int
@@ -176,7 +177,7 @@ values = foldWithMBB handleLeaf handleNode []
 
 
 -- ----------------------------------
--- insert 
+-- insert
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
 insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
@@ -193,7 +194,7 @@ simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) (on f getElem l r)
 simpleMergeEqNode _ l _ = l
 
 -- | Unifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
---  also exists in the left tree. Much faster than union, though. 
+--  also exists in the left tree. Much faster than union, though.
 unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionDistinctWith _ Empty{} t           = t
 unionDistinctWith _ t       Empty{}     = t
@@ -209,12 +210,12 @@ unionDistinctWith f left right
     newNode = addLeaf f left right
 
 -- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB'"'s which
---  also exists in the left tree. Much faster than union, though. 
+--  also exists in the left tree. Much faster than union, though.
 unionDistinct :: RTree a -> RTree a -> RTree a
 unionDistinct = unionDistinctWith const
 
 addLeaf :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
-addLeaf f left right 
+addLeaf f left right
     | depth left + 1 == depth right = node (newNode `unionMBB'` right) (newNode : nonEq)
     | otherwise                     = node (left `unionMBB'` right) newChildren
     where
@@ -228,10 +229,10 @@ addLeaf f left right
 findNodeWithMinimalAreaIncrease :: (a -> a -> a) -> RTree a -> [RTree a] -> [RTree a]
 findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
     where
---  xsAndIncrease :: [(RTree a, Double)]    
+--  xsAndIncrease :: [(RTree a, Double)]
     xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
     minimalIncrease = minimum $ snd <$> xsAndIncrease
---  xsAndIncrease' :: [(RTree a, Double)]   
+--  xsAndIncrease' :: [(RTree a, Double)]
     splitMinimal [] = []
     splitMinimal ((t,mbb):xs)
         | mbb == minimalIncrease = unionDistinctSplit f leaf t ++ (fst <$> xs)
@@ -304,14 +305,14 @@ lookup _   Empty = Nothing
 lookup mbb t@Leaf{}
     | mbb == getMBB t = Just $ getElem t
     | otherwise = Nothing
-lookup mbb t = case founds of 
+lookup mbb t = case founds of
     [] -> Nothing
     x:_ -> Just x
     where
     matches = filter (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
-    founds = catMaybes $ map (lookup mbb) matches
+    founds = catMaybes $ L.map (lookup mbb) matches
 
--- | returns all keys and values, which are located in the given bounding box. 
+-- | returns all keys and values, which are located in the given bounding box.
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
 lookupRangeWithKey _ Empty = []
 lookupRangeWithKey mbb t@Leaf{}
@@ -323,7 +324,7 @@ lookupRangeWithKey mbb t = founds
     founds = concatMap (lookupRangeWithKey mbb) matches
     intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
 
--- | returns all values, which are located in the given bounding box. 
+-- | returns all values, which are located in the given bounding box.
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange mbb t = snd <$> (lookupRangeWithKey mbb t)
 
@@ -333,7 +334,7 @@ lookupRange mbb t = snd <$> (lookupRangeWithKey mbb t)
 -- | Delete a key and its value from the RTree. When the key is not a member of the tree, the original tree is returned.
 delete :: MBB -> RTree a -> RTree a
 delete _   Empty = Empty
-delete mbb  t@Leaf{} 
+delete mbb  t@Leaf{}
     | mbb == getMBB t = Empty
     | otherwise       = t
 delete mbb root
@@ -344,13 +345,13 @@ delete mbb root
 
 
 delete' :: MBB -> RTree a -> RTree a
-delete' mbb  t@Leaf{} 
+delete' mbb  t@Leaf{}
     | mbb == getMBB t = Empty
     | otherwise       = t
 delete' mbb t = fromList' $ orphans ++ [newValidNode]
     where
     (matches, noMatches) = partition (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
-    matches' = filter (not . null) $ map (delete' mbb) matches
+    matches' = filter (not . null) $ L.map (delete' mbb) matches
     (orphans, validMatches) = foldr handleInvalid ([], []) matches'
 --  handleInvalid :: RTree a -> ([RTree a], [RTree a]) -> ([RTree a], [RTree a])
     handleInvalid l@Leaf{} (orphans', validMatches') = (orphans', l:validMatches')
@@ -376,7 +377,7 @@ unionWith f t1 t2
     | otherwise            = unionWith f t2 t1
 
 -- | Unifies the first and the second tree into one.
--- If an 'MBB' is a key in both trees, the value from the left tree is chosen. 
+-- If an 'MBB' is a key in both trees, the value from the left tree is chosen.
 --
 -- prop> union = unionWith const
 union :: RTree a -> RTree a -> RTree a
@@ -399,7 +400,7 @@ isValid context x = case L.length c >= m && L.length c <= n && (and $ (isValid c
     True -> True
     False -> error ( "invalid " ++ show (L.length c) ++ " " ++ show context )
     where
-    isBalanced :: RTree a -> Bool 
+    isBalanced :: RTree a -> Bool
     isBalanced (Leaf _ _ ) = True
     isBalanced x' = (and $ isBalanced <$> c') && (and $ (== depth (head c')) <$> (depth <$> c'))
         where
@@ -437,7 +438,7 @@ depth (Leaf _ _ ) = 1
 depth t = 1 + (depth $ head $ getChildren t)
 
 -- | returns the number of elements in a tree
-length :: RTree a -> Int 
+length :: RTree a -> Int
 length Empty = 0
 length (Leaf {}) = 1
 length t = sum $ length <$> (getChildren t)
@@ -476,3 +477,6 @@ instance  (Binary a) => Binary (RTree a) where
 instance (Monoid a) => Monoid (RTree a) where
     mempty = empty
     mappend = unionWith mappend
+
+map :: (a -> b) -> RTree a -> RTree b
+map f t = fromList $ L.map (\(k,v) -> (k, f v)) $ toList t

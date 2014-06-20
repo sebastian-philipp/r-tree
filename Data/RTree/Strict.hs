@@ -32,6 +32,7 @@ module Data.RTree.Strict
     , insert
     , insertWith
     , delete
+    , map
     , mapMaybe
     -- ** Merging
     , union
@@ -49,15 +50,19 @@ module Data.RTree.Strict
     , toList
 ) where
 
-import           Prelude hiding (lookup, length, null)
+import           Prelude hiding (lookup, length, null, map)
 import           Data.Function (on)
-import qualified Data.List as L (length)
+import qualified Data.List as L (length,map)
 import qualified Data.Maybe as Maybe (mapMaybe)
-
-import           Control.Applicative ((<$>))
-import           Data.RTree.Base hiding (singleton, fromList, insertWith, unionDistinctWith, unionWith, insert, mapMaybe, union, fromList', unionDistinct, unionDistinctSplit)
+import           Data.Functor
+import           Data.RTree.Base hiding (map, singleton, fromList, insertWith, unionDistinctWith, unionWith, insert, mapMaybe, union, fromList', unionDistinct, unionDistinctSplit)
 import           Data.RTree.MBB hiding (mbb)
 import qualified  Data.RTree.MBB as MBB
+
+
+
+instance Functor RTree where
+  fmap = map
 
 -- ---------------
 -- smart constuctors
@@ -78,7 +83,7 @@ fromList' :: [RTree a] -> RTree a
 fromList' [] = empty
 fromList' ts = foldr1 unionDistinct ts
 -- ----------------------------------
--- insert 
+-- insert
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
 insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
@@ -95,7 +100,7 @@ simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) $! (on f getElem l r)
 simpleMergeEqNode _ l _ = l
 
 -- | Unifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
---  also exists in the left tree. Much faster than union, though. 
+--  also exists in the left tree. Much faster than union, though.
 unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionDistinctWith _ Empty{} t           = t
 unionDistinctWith _ t       Empty{}     = t
@@ -111,12 +116,12 @@ unionDistinctWith f left right
     newNode = addLeaf f left right
 
 -- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB'"'s which
---  also exists in the left tree. Much faster than union, though. 
+--  also exists in the left tree. Much faster than union, though.
 unionDistinct :: RTree a -> RTree a -> RTree a
 unionDistinct = unionDistinctWith const
 
 addLeaf :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
-addLeaf f left right 
+addLeaf f left right
     | depth left + 1 == depth right = node (newNode `unionMBB'` right) (newNode : nonEq)
     | otherwise                     = node (left `unionMBB'` right) newChildren
     where
@@ -130,10 +135,10 @@ addLeaf f left right
 findNodeWithMinimalAreaIncrease :: (a -> a -> a) -> RTree a -> [RTree a] -> [RTree a]
 findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
     where
---  xsAndIncrease :: [(RTree a, Double)]    
+--  xsAndIncrease :: [(RTree a, Double)]
     xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
     minimalIncrease = minimum $ snd <$> xsAndIncrease
---  xsAndIncrease' :: [(RTree a, Double)]   
+--  xsAndIncrease' :: [(RTree a, Double)]
     splitMinimal [] = []
     splitMinimal ((t,mbb):xs)
         | mbb == minimalIncrease = unionDistinctSplit f leaf t ++ (fst <$> xs)
@@ -155,7 +160,7 @@ unionWith f t1 t2
     | otherwise            = unionWith f t2 t1
 
 -- | Unifies the first and the second tree into one.
--- If an 'MBB' is a key in both trees, the value from the left tree is chosen. 
+-- If an 'MBB' is a key in both trees, the value from the left tree is chosen.
 --
 -- prop> union = unionWith const
 union :: RTree a -> RTree a -> RTree a
@@ -168,3 +173,6 @@ mapMaybe f t = fromList $ Maybe.mapMaybe func $ toList t
     func (mbb,x) = case f x of
             Nothing -> Nothing
             Just x' -> Just (mbb, x')
+
+map :: (a -> b) -> RTree a -> RTree b
+map f t = fromList $ L.map (\(k,v) -> (k, f v)) $ toList t
