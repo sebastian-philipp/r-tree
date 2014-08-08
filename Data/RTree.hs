@@ -56,9 +56,5 @@ module Data.RTree
 
 import Prelude ()
 import Data.RTree.Base
-import Data.Functor
 
 import qualified Data.RTree.MBB as MBB
-
-instance Functor RTree where
-  fmap = Data.RTree.Base.map

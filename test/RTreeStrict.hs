@@ -6,24 +6,25 @@ module Main
 where
 
 -- import qualified Data.RTree                       as Lazy    -- just for dev.
-import           Prelude                              hiding (lookup, map, mapM,
+import            Prelude                              hiding (lookup, map, mapM,
                                                        null, succ)
 
 --import           Control.Arrow                        (second)
-import           Control.Applicative ((<$>))
-import           Control.DeepSeq                      (($!!))
+import            Control.Applicative ((<$>))
+import            Control.DeepSeq                      (($!!))
 
-import           Data.Monoid
-import           Data.RTree.Strict
-import           Data.RTree.MBB
+import            Data.Monoid
+import            Data.RTree.Strict
+import qualified  Data.RTree as L
+import            Data.RTree.MBB
 
-import           GHC.AssertNF
+import            GHC.AssertNF
 
 -- import           System.IO
 
-import           Test.Framework
-import           Test.Framework.Providers.HUnit
-import           Test.HUnit                           hiding (Test, Testable)
+import            Test.Framework
+import            Test.Framework.Providers.HUnit
+import            Test.HUnit                           hiding (Test, Testable)
 
 newtype Attr = A [Int]
     deriving (Show)
@@ -76,6 +77,9 @@ main = defaultMain
        , testCase "test_insertWith1" (checkIsNF test_insertWith1)
        , testCase "test_insertWith" (checkIsNF test_insertWith)
        , testCase "test_map" (checkIsNF test_map)
+       , testCase "test_toStrict" (checkIsNF test_toStrict)
+
+
        --, testCase "m1" (checkIsNF m1)
        --, testCase "m2" (checkIsNF m2)
        --, testCase "m3" (checkIsNF m3)
@@ -139,6 +143,9 @@ test_insertWith1 = insertWith mappend t_mbb1 (mkA' 4) t_1
 
 test_insertWith :: RTree Attr
 test_insertWith = insertWith mappend t_mbb6 (mkA' 6) tu_2
+
+test_toStrict :: RTree Attr
+test_toStrict = toStrict $ L.fromList u_2
 
 
 

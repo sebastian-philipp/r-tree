@@ -25,7 +25,6 @@ module Data.RTree.Base
     , insert
     , insertWith
     , delete
-    , map
     , mapMaybe
     -- ** Merging
     , union
@@ -87,7 +86,7 @@ data RTree a =
     | Node  {getMBB ::                  MBB, getChildren' :: [RTree a] }
     | Leaf  {getMBB :: {-# UNPACK #-} ! MBB, getElem :: a}
     | Empty
-    deriving (Show, Eq, Typeable, Generic)
+    deriving (Show, Eq, Typeable, Generic, Functor)
 
 -- | It is possible, to change these constants, but the tree won't be space optimal anymore.
 m, n :: Int
@@ -209,7 +208,7 @@ unionDistinctWith f left right
     where
     newNode = addLeaf f left right
 
--- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB'"'s which
+-- | Únifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
 --  also exists in the left tree. Much faster than union, though.
 unionDistinct :: RTree a -> RTree a -> RTree a
 unionDistinct = unionDistinctWith const
@@ -478,5 +477,3 @@ instance (Monoid a) => Monoid (RTree a) where
     mempty = empty
     mappend = unionWith mappend
 
-map :: (a -> b) -> RTree a -> RTree b
-map f t = fromList $ L.map (\(k,v) -> (k, f v)) $ toList t
