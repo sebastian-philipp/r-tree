@@ -154,16 +154,16 @@ simpleMergeEqNode _ l _ = l
 -- | Unifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
 --  also exists in the left tree. Much faster than union, though.
 unionDistinctWith :: (a -> a -> a) -> Lazy.RTree a -> Lazy.RTree a -> Lazy.RTree a
-unionDistinctWith _ Lazy.Empty{} t           = t
-unionDistinctWith _ t       Lazy.Empty{}     = t
+unionDistinctWith _ Lazy.Empty{}   t                = t
+unionDistinctWith _ t              Lazy.Empty{}     = t
 unionDistinctWith f t1@Lazy.Leaf{} t2@Lazy.Leaf{}
-    | on (==) Lazy.getMBB t1 t2              = simpleMergeEqNode f t1 t2
-    | otherwise                         = Lazy.createNodeWithChildren [t1, t2] -- root case
+    | on (==) Lazy.getMBB t1 t2       = simpleMergeEqNode f t1 t2
+    | otherwise                       = Lazy.createNodeWithChildren [t1, t2] -- root case
 unionDistinctWith f left right
     | Lazy.depth left > Lazy.depth right              = unionDistinctWith f right left
     | Lazy.depth left == Lazy.depth right             = fromList' $ (Lazy.getChildren left) ++ [right]
     | (L.length $ Lazy.getChildren newNode) > Lazy.n  = Lazy.createNodeWithChildren $ Lazy.splitNode newNode
-    | otherwise                             = newNode
+    | otherwise                                       = newNode
     where
     newNode = addLeaf f left right
 
@@ -175,7 +175,7 @@ unionDistinct = unionDistinctWith const
 addLeaf :: (a -> a -> a) -> Lazy.RTree a -> Lazy.RTree a -> Lazy.RTree a
 addLeaf f left right
     | Lazy.depth left + 1 == Lazy.depth right = Lazy.node (newNode `Lazy.unionMBB'` right) (newNode : nonEq)
-    | otherwise                     = Lazy.node (left `Lazy.unionMBB'` right) newChildren
+    | otherwise                               = Lazy.node (left `Lazy.unionMBB'` right) newChildren
     where
     newChildren = findNodeWithMinimalAreaIncrease f left (Lazy.getChildren right)
     (eq, nonEq) = Lazy.partition (on (==) Lazy.getMBB left) $ Lazy.getChildren right
@@ -194,12 +194,12 @@ findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
     splitMinimal [] = []
     splitMinimal ((t,mbb):xs)
         | mbb == minimalIncrease = unionDistinctSplit f leaf t ++ (fst <$> xs)
-        | otherwise            = t : splitMinimal xs
+        | otherwise              = t : splitMinimal xs
 
 unionDistinctSplit :: (a -> a -> a) -> Lazy.RTree a -> Lazy.RTree a -> [Lazy.RTree a]
 unionDistinctSplit f leaf e
     | (L.length $ Lazy.getChildren newLeaf) > Lazy.n = Lazy.splitNode newLeaf
-    | otherwise = [newLeaf]
+    | otherwise                                      = [newLeaf]
     where
     newLeaf = addLeaf f leaf e
 
@@ -230,8 +230,8 @@ delete mbb = RTree . Lazy.delete mbb . toLazy
 unionWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionWith f' l' r' = RTree $ unionWith' f' (toLazy l') (toLazy r')
     where
-    unionWith' _ l     Lazy.Empty    = l
-    unionWith' _ Lazy.Empty r        = r
+    unionWith' _ l          Lazy.Empty   = l
+    unionWith' _ Lazy.Empty r            = r
     unionWith' f t1 t2
         | Lazy.depth t1 <= Lazy.depth t2 = foldr (uncurry (insertWithStrictLazy f)) t2 (Lazy.toList t1)
         | otherwise            = unionWith' f t2 t1
@@ -248,8 +248,8 @@ mapMaybe :: (a -> Maybe b) -> RTree a -> RTree b
 mapMaybe f t = fromList $ Maybe.mapMaybe func $ toList t
     where
     func (mbb,x) = case f x of
-            Nothing -> Nothing
-            Just x' -> Just (mbb, x')
+        Nothing -> Nothing
+        Just x' -> Just (mbb, x')
 
 
 
@@ -260,10 +260,10 @@ map :: (a -> b) -> RTree a -> RTree b
 map f' = RTree . map' f' . toLazy
     where
     map' f (Lazy.Node4 mbb x y z w) = Lazy.Node4 mbb (map' f x) (map' f y) (map' f z) (map' f w)
-    map' f (Lazy.Node3 mbb x y z) = Lazy.Node3 mbb (map' f x) (map' f y) (map' f z)
-    map' f (Lazy.Node2 mbb x y) = Lazy.Node2 mbb (map' f x) (map' f y)
-    map' f (Lazy.Node mbb xs) = Lazy.Node mbb (map' f <$> xs)
-    map' f (Lazy.Leaf mbb e) = toLazy $ singleton mbb (f e)
+    map' f (Lazy.Node3 mbb x y z)   = Lazy.Node3 mbb (map' f x) (map' f y) (map' f z)
+    map' f (Lazy.Node2 mbb x y)     = Lazy.Node2 mbb (map' f x) (map' f y)
+    map' f (Lazy.Node mbb xs)       = Lazy.Node mbb (map' f <$> xs)
+    map' f (Lazy.Leaf mbb e)        = toLazy $ singleton mbb (f e)
     map' _ Lazy.Empty = Lazy.Empty
 -- ----------------------
 
