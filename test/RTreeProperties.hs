@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+
+
 module Main
 (
     main
@@ -8,17 +11,19 @@ import           Data.RTree.MBB hiding (mbb)
 
 
 -- import qualified Data.Set as S
-
 import           Prelude                              hiding (lookup, map, null, length)
 import           Data.Binary (encode, decode)
 import           Data.Function (on)
 import           Data.List ((\\))
 import qualified Data.List as L (map, length)
+import           Debug.Trace                          (trace)
 import           Control.Applicative ((<$>))
 
 import           Test.Framework
 import           Test.Framework.Providers.HUnit
 import           Test.Framework.Providers.QuickCheck2
+import           Test.QuickCheck.Arbitrary            (Arbitrary, arbitrary, shrink)
+import           Test.QuickCheck.Gen                  (suchThat)
 import           Test.HUnit                           hiding (Test, Testable)
 import           Text.Show.Functions                  ()
 
@@ -45,6 +50,9 @@ main = do
            , testCase "test_delete" test_delete
            , testCase "test_fromList" test_fromList
            , testCase "test_binary" test_binary
+           , testProperty "prop_mbb" prop_mbb
+           , testProperty "prop_rtree" prop_rtree
+           
 --       , testProperty "map a StringMap" prop_map
 
        ]
@@ -196,14 +204,42 @@ test_binary :: Assertion
 test_binary = do
     (decode $ encode $ tu_2) @?= tu_2
 
-{-
-
-test_toList :: Assertion
-test_delete :: Assertion
--}
 
 
+instance Arbitrary MBB where
+    arbitrary = do
+        cx <- arbitrary
+        cy <- arbitrary
+        h <- arbitrary `suchThat` (>=0)
+        w <- arbitrary `suchThat` (>=0)
+        return $ MBB (cx - w) (cy - h) (cx + w) (cy + h)
 
+    shrink mbb@(MBB ulx uly brx bry)
+        | isPointMBB mbb = []
+        | otherwise      = [MBB (mid ulx brx) (mid uly bry) (mid ulx brx) (mid uly bry)] 
+        where 
+            mid x y = (y - x) / 2
+
+instance Arbitrary (RTree Int) where
+    arbitrary = do
+        ks <- arbitrary
+        return $ fromList (ks `zip` [1..])
+
+    shrink Empty = []
+    shrink Leaf{} = [Empty]
+    shrink t =
+        [Empty] ++
+        -- shrink to subterms
+        (getChildren t) ++
+        -- recursively shrink subterms
+        [createNodeWithChildren newChildred | newChildred <- shrink (getChildren t)]
+
+prop_mbb :: MBB -> Bool
+prop_mbb mbb = isValidMBB mbb
+
+
+prop_rtree :: RTree Int -> Bool
+prop_rtree t = isValid "prop_rtree" t
 
 -- -------------------------
 

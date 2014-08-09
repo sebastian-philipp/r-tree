@@ -23,7 +23,9 @@ module Data.RTree.MBB
     containsMBB,
     unionMBB,
     unionsMBB,
-    intersectMBB
+    intersectMBB,
+    isValidMBB,
+    isPointMBB
 )
 where
 
@@ -45,6 +47,13 @@ mbb :: Double -- ^ x - coordinate of first point
     -> Double   -- ^ x - coordinate of second point
     -> MBB
 mbb = MBB
+
+-- | the property, that a 'MBB' must hold
+isValidMBB :: MBB -> Bool
+isValidMBB (MBB ulx uly brx bry) = (ulx <= brx) && (uly <= bry)
+
+isPointMBB :: MBB -> Bool 
+isPointMBB (MBB ulx uly brx bry) = (ulx == brx) && (uly == bry)
 
 -- | internal only.
 unionsMBB :: [MBB] -> MBB

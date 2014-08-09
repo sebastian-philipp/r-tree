@@ -40,7 +40,6 @@ module Data.RTree.Base
     -- * Lists
     , fromList
     , toList
-
     -- * Internal and Testing
     , foldWithMBB
     , pp
