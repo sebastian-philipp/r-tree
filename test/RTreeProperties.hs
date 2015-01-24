@@ -57,29 +57,36 @@ main = do
 
        ]
 -- ------------------------
-t_mbb1, t_mbb2 , t_mbb3, t_mbb4, t_mbb5, t_mbb6 :: MBB
+t_mbb1, t_mbb2 , t_mbb3, t_mbb4, t_mbb5, t_mbb6, t_mbb7, t_mbb8 :: MBB
 t_mbb1 = (MBB 0.0 0.0 1.0 1.0)
 t_mbb2 = (MBB 5.0 0.0 6.0 1.0)
 t_mbb3 = (MBB 1.0 2.0 2.0 3.0)
 t_mbb4 = (MBB 6.0 2.0 7.0 3.0)
 t_mbb5 = (MBB 3.0 3.0 4.0 4.0)
 t_mbb6 = (MBB 0.0 0.0 0.0 0.0)
+t_mbb7 = (MBB 1.0 2.0 5.0 4.0)
+t_mbb8 = (MBB 4.0 0.0 6.0 3.0)
 
-t_1, t_2, t_3, t_4, t_5, t_6 :: RTree String
+t_1, t_2, t_3, t_4, t_5, t_6, t_7, t_8 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
 t_4 = singleton t_mbb4 "d"
 t_5 = singleton t_mbb5 "e"
 t_6 = singleton t_mbb6 "f"
+t_7 = singleton t_mbb7 "g"
+t_8 = singleton t_mbb8 "h"
 
-u_1, u_2 :: [(MBB, String)]
+
+u_1, u_2, u_3 :: [(MBB, String)]
 u_1 = [(t_mbb1, "a"), (t_mbb2, "b"),(t_mbb3, "c"),(t_mbb4, "d")]
 u_2 = [(t_mbb5, "e"), (t_mbb6, "f")] ++ u_1
+u_3 = [(t_mbb7, "g"), (t_mbb8, "h")] ++ u_2
 
-tu_1, tu_2 :: RTree String
+tu_1, tu_2, tu_3 :: RTree String
 tu_1 = fromList u_1
 tu_2 = fromList u_2
+tu_3 = fromList u_3
 
 -- ------------------------
 eqRt :: (Show a, Eq a) => RTree a -> RTree a -> Assertion
@@ -122,6 +129,14 @@ test_lookup = do
     lookup t_mbb5 tu_2 @?= Just "e"
     lookup t_mbb6 tu_2 @?= Just "f"
 
+    lookup t_mbb2 tu_3 @?= Just "b"
+    lookup t_mbb3 tu_3 @?= Just "c"
+    lookup t_mbb4 tu_3 @?= Just "d"
+    lookup t_mbb5 tu_3 @?= Just "e"
+    lookup t_mbb6 tu_3 @?= Just "f"
+    lookup t_mbb7 tu_3 @?= Just "g"
+    lookup t_mbb8 tu_3 @?= Just "h"
+
     lookup t_mbb1 empty @?= (Nothing :: Maybe ())
     lookup t_mbb6 (fromList u_1) @?= Nothing
 
@@ -140,6 +155,18 @@ test_lookupRange = do
     lookupRange (MBB 0.0 0.0 1.0 1.0) tu_2 @?= ["f", "a"]
     lookupRange (MBB 0.0 0.0 7.0 4.0) tu_2 @?= ["e","c","f","a","b","d"] -- todo order irrelevant
 
+    lookupRange t_mbb2 tu_3 @?= ["b"]
+    lookupRange t_mbb3 tu_3 @?= ["c"]
+    lookupRange t_mbb4 tu_3 @?= ["d"]
+    lookupRange t_mbb5 tu_3 @?= ["e"]
+    lookupRange t_mbb6 tu_3 @?= ["f"]
+    lookupRange t_mbb7 tu_3 `eqList` ["g","e","c"]
+    lookupRange t_mbb8 tu_3 `eqList` ["h", "b"]
+
+    lookupRange (MBB 3.0 2.0 7.0 4.0) tu_3 `eqList` ["e","d"]
+    lookupRange (MBB 0.0 0.0 5.0 3.0) tu_3 `eqList` ["f","a","c"]
+
+
 test_lookupRangeWithKey :: Assertion
 test_lookupRangeWithKey = do
     lookupRangeWithKey t_mbb3 t_3 @?= [(t_mbb3, "c")]
@@ -152,6 +179,13 @@ test_lookupRangeWithKey = do
     lookupRangeWithKey (MBB 0.0 0.0 1.0 1.0) tu_2 @?= [(t_mbb6, "f"), (t_mbb1, "a")]
     lookupRangeWithKey (MBB 0.0 0.0 7.0 4.0) tu_2 `eqList` u_2 -- todo order irrelevant
 
+    lookupRangeWithKey t_mbb2 tu_3 @?= [(t_mbb2, "b")]
+    lookupRangeWithKey t_mbb3 tu_3 @?= [(t_mbb3, "c")]
+    lookupRangeWithKey t_mbb4 tu_3 @?= [(t_mbb4, "d")]
+    lookupRangeWithKey t_mbb5 tu_3 @?= [(t_mbb5, "e")]
+    lookupRangeWithKey t_mbb6 tu_3 @?= [(t_mbb6, "f")]
+    lookupRangeWithKey t_mbb7 tu_3 `eqList` [(t_mbb7, "g"), (t_mbb5, "e"), (t_mbb3, "c")]
+    lookupRangeWithKey t_mbb8 tu_3 `eqList` [(t_mbb8, "h"), (t_mbb2, "b")]
 test_union :: Assertion
 test_union = do
     union empty empty `eqRt` (empty :: RTree ())
