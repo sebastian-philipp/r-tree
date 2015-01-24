@@ -42,6 +42,8 @@ main = do
            , testCase "test_lookup" test_lookup
            , testCase "test_lookupRange" test_lookupRange
            , testCase "test_lookupRangeWithKey" test_lookupRangeWithKey
+           , testCase "test_lookupContainsRange" test_lookupContainsRange
+           , testCase "test_lookupContainsRangeWithKey" test_lookupContainsRangeWithKey
            , testCase "test_union" test_union
            , testCase "test_unionWith" test_unionWith
            , testCase "test_length" test_length
@@ -186,6 +188,46 @@ test_lookupRangeWithKey = do
     lookupRangeWithKey t_mbb6 tu_3 @?= [(t_mbb6, "f")]
     lookupRangeWithKey t_mbb7 tu_3 `eqList` [(t_mbb7, "g"), (t_mbb5, "e"), (t_mbb3, "c")]
     lookupRangeWithKey t_mbb8 tu_3 `eqList` [(t_mbb8, "h"), (t_mbb2, "b")]
+
+test_lookupContainsRange :: Assertion
+test_lookupContainsRange = do
+    lookupContainsRange t_mbb3 t_3 @?= ["c"]
+    lookupContainsRange t_mbb1 tu_1 @?= ["a"]
+    lookupContainsRange t_mbb2 tu_2 @?= ["b"]
+    lookupContainsRange t_mbb3 tu_2 @?= ["c"]
+    lookupContainsRange t_mbb4 tu_2 @?= ["d"]
+    lookupContainsRange t_mbb5 tu_2 @?= ["e"]
+    lookupContainsRange t_mbb6 tu_2 `eqList` ["f","a"]
+
+    lookupContainsRange (MBB 1.0 1.0 7.0 3.0) tu_2 @?= []
+    lookupContainsRange (MBB 0.0 0.0 1.0 1.0) tu_2 @?= ["a"]
+    lookupContainsRange (MBB 0.0 0.0 7.0 4.0) tu_2 @?= []
+    lookupContainsRange (MBB 0.5 0.5 0.5 0.5) tu_2 @?= ["a"]
+    lookupContainsRange (MBB 0.0 1.0 0.0 1.0) tu_2 @?= ["a"]
+    lookupContainsRange (MBB 1.0 0.0 1.0 0.0) tu_2 @?= ["a"]
+    lookupContainsRange (MBB 1.0 1.0 1.0 1.0) tu_2 @?= ["a"]
+
+    lookupContainsRange t_mbb2 tu_3 `eqList` ["b","h"]
+    lookupContainsRange t_mbb3 tu_3 `eqList` ["c","g"]
+    lookupContainsRange t_mbb4 tu_3 `eqList` ["d"]
+    lookupContainsRange t_mbb5 tu_3 `eqList` ["e","g"]
+    lookupContainsRange t_mbb6 tu_3 `eqList` ["f","a"]
+    lookupContainsRange t_mbb7 tu_3 `eqList` ["g"]
+    lookupContainsRange t_mbb8 tu_3 `eqList` ["h"]
+
+    lookupContainsRange (MBB 4.5 2.5 4.5 2.5) tu_3 `eqList` ["g","h"]
+
+test_lookupContainsRangeWithKey :: Assertion
+test_lookupContainsRangeWithKey = do
+    lookupContainsRangeWithKey t_mbb3 t_3 @?= [(t_mbb3, "c")]
+    lookupContainsRangeWithKey t_mbb1 tu_1 @?= [(t_mbb1, "a")]
+    lookupContainsRangeWithKey t_mbb2 tu_2 @?= [(t_mbb2, "b")]
+    lookupContainsRangeWithKey t_mbb3 tu_2 @?= [(t_mbb3, "c")]
+    lookupContainsRangeWithKey t_mbb4 tu_2 @?= [(t_mbb4, "d")]
+    lookupContainsRangeWithKey t_mbb5 tu_2 @?= [(t_mbb5, "e")]
+    lookupContainsRangeWithKey t_mbb6 tu_2 `eqList` [(t_mbb6, "f"), (t_mbb1, "a")]
+
+
 test_union :: Assertion
 test_union = do
     union empty empty `eqRt` (empty :: RTree ())

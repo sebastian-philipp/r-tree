@@ -46,6 +46,8 @@ module Data.RTree.Strict
     , lookup
     , lookupRange
     , lookupRangeWithKey
+    , lookupContainsRange
+    , lookupContainsRangeWithKey
     , length
     , null
     , keys
@@ -217,6 +219,14 @@ lookupRangeWithKey mbb = Lazy.lookupRangeWithKey mbb . toLazy
 -- | returns all values, which are located in the given bounding box.
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange mbb = Lazy.lookupRange mbb . toLazy
+
+-- | returns all keys and values containing the given bounding box
+lookupContainsRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
+lookupContainsRangeWithKey mbb = Lazy.lookupContainsRangeWithKey mbb . toLazy
+
+-- | returns all values containing the given bounding box
+lookupContainsRange :: MBB -> RTree a -> [a]
+lookupContainsRange mbb = Lazy.lookupContainsRange mbb .toLazy
 
 -- -----------
 -- delete
