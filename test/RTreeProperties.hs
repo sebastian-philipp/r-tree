@@ -86,7 +86,9 @@ eqRt :: (Show a, Eq a) => RTree a -> RTree a -> Assertion
 eqRt = eqList `on` toList
 
 eqList :: (Show a, Eq a) => [a] -> [a] -> Assertion
-eqList l1 l2 = [] @=? (l1 \\ l2)
+eqList l1 l2 = do
+    [] @=? (l1 \\ l2)
+    (L.length l1) @=? (L.length l2)
 -- ------------------------
 
 test_null :: Assertion
