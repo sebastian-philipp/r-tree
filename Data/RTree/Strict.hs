@@ -5,7 +5,7 @@
 
 {- |
     Module     : Data.RTree.Strict
-    Copyright  : Copyright (c) 2014, Birte Wagner, Sebastian Philipp
+    Copyright  : Copyright (c) 2015, Birte Wagner, Sebastian Philipp
     License    : MIT
 
     Maintainer : Birte Wagner, Sebastian Philipp (sebastian@spawnhost.de)
@@ -76,7 +76,7 @@ import qualified Data.RTree.MBB as MBB
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
     deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid)
 
--- | converts a lazy RTree into a strict RTree 
+-- | converts a lazy RTree into a strict RTree
 -- /O(n)/
 toStrict :: Lazy.RTree a -> RTree a
 toStrict t = map id (RTree t)
