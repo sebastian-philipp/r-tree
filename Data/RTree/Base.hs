@@ -33,6 +33,8 @@ module Data.RTree.Base
     , lookup
     , lookupRange
     , lookupRangeWithKey
+    , lookupContainsRangeWithKey
+    , lookupContainsRange
     , length
     , null
     , keys
@@ -325,6 +327,22 @@ lookupRangeWithKey mbb t = founds
 -- | returns all values, which are located in the given bounding box.
 lookupRange :: MBB -> RTree a -> [a]
 lookupRange mbb t = snd <$> (lookupRangeWithKey mbb t)
+
+-- | returns all keys and values containing the given bounding box
+lookupContainsRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
+lookupContainsRangeWithKey _ Empty = []
+lookupContainsRangeWithKey mbb t@Leaf{}
+    | (getMBB t) `containsMBB` mbb = [(getMBB t, getElem t)]
+    | otherwise = []
+lookupContainsRangeWithKey mbb t = founds
+    where
+    matches = filter intersectRTree $ getChildren t
+    founds = concatMap (lookupContainsRangeWithKey mbb) matches
+    intersectRTree x = (getMBB x) `containsMBB` mbb
+
+-- | returns all values containing the given bounding box
+lookupContainsRange :: MBB -> RTree a -> [a]
+lookupContainsRange mbb t = snd <$> (lookupContainsRangeWithKey mbb t)
 
 -- -----------
 -- delete

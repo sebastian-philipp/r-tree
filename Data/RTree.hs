@@ -45,6 +45,8 @@ module Data.RTree
     , lookup
     , lookupRange
     , lookupRangeWithKey
+    , lookupContainsRange
+    , lookupContainsRangeWithKey
     , length
     , null
     , keys
