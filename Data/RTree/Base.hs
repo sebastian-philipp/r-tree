@@ -316,7 +316,7 @@ lookup mbb t = case founds of
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
 lookupRangeWithKey _ Empty = []
 lookupRangeWithKey mbb t@Leaf{}
-    | mbb `containsMBB` (getMBB t) = [(getMBB t, getElem t)]
+    | isJust $ mbb `intersectMBB` (getMBB t) = [(getMBB t, getElem t)]
     | otherwise = []
 lookupRangeWithKey mbb t = founds
     where
