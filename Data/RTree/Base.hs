@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable, BangPatterns #-}
+{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, DeriveDataTypeable, BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 {- |
@@ -72,10 +72,8 @@ import           Data.List (maximumBy, minimumBy, partition)
 import qualified Data.List as L (length,map)
 import           Data.Maybe (catMaybes, isJust)
 import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Monoid (Monoid, mempty, mappend)
 import           Data.Typeable (Typeable)
 
-import           Control.Applicative ((<$>))
 import           Control.DeepSeq (NFData, rnf)
 
 import           GHC.Generics (Generic)

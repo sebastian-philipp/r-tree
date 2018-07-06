@@ -31,8 +31,6 @@ where
 
 import Data.Binary
 
-import Control.Applicative ((<$>), (<*>))
-
 import GHC.Generics (Generic)
 
 -- | Minimal bounding box

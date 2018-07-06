@@ -65,11 +65,9 @@ import           Data.Binary
 import           Data.Function (on)
 import qualified Data.List as L (length)
 import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Monoid (Monoid)
 import           Data.Typeable (Typeable)
 
 import           Control.DeepSeq (NFData)
-import           Data.Functor
 import           GHC.Generics (Generic)
 --import           Data.RTree.Base hiding (RTree, singleton, fromList, insertWith, unionDistinctWith, unionWith, insert, mapMaybe, union, fromList', unionDistinct, unionDistinctSplit)
 import qualified Data.RTree.Base as Lazy
