@@ -65,7 +65,6 @@ import           Data.Binary
 import           Data.Function (on)
 import qualified Data.List as L (length)
 import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Monoid (Monoid)
 import           Data.Semigroup
 import           Data.Typeable (Typeable)
 
