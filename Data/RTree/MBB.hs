@@ -68,7 +68,7 @@ unionMBB (MBB ulx uly brx bry) (MBB ulx' uly' brx' bry') = MBB (min ulx ulx') (m
 area :: MBB -> Double
 area (MBB ulx uly brx bry) = (brx - ulx) * (bry - uly)
 
--- | returns True, when the first mbb contains the secons
+-- | returns True, when the first mbb contains the second
 containsMBB :: MBB -> MBB -> Bool
 containsMBB (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
 
