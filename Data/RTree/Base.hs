@@ -31,6 +31,8 @@ module Data.RTree.Base
     , unionWith
     -- * Searching and Properties
     , lookup
+    , intersectWithKey
+    , intersect
     , lookupRange
     , lookupRangeWithKey
     , lookupContainsRangeWithKey
@@ -311,6 +313,21 @@ lookup mbb t = case founds of
     where
     matches = filter (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
     founds = catMaybes $ L.map (lookup mbb) matches
+
+-- | returns all keys and values, which intersects with the given bounding box.
+intersectWithKey :: MBB -> RTree a -> [(MBB, a)]
+intersectWithKey _ Empty = []
+intersectWithKey mbb t@Leaf{}
+    | isJust $ intersectMBB mbb (getMBB t) = [(getMBB t, getElem t)]
+    | otherwise = []
+intersectWithKey mbb t = founds
+    where matches = filter intersectRTree $ getChildren t
+          founds = concatMap (intersectWithKey mbb) matches
+          intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
+
+-- | returns all values, which intersects with the given bounding box.
+intersect :: MBB -> RTree a -> [a]
+intersect mbb t = snd <$> intersectWithKey mbb t
 
 -- | returns all keys and values, which are located in the given bounding box.
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]

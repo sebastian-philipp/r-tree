@@ -44,6 +44,8 @@ module Data.RTree.Strict
     , unionWith
     -- * Searching and Properties
     , lookup
+    , intersectWithKey
+    , intersect
     , lookupRange
     , lookupRangeWithKey
     , lookupContainsRange
@@ -211,6 +213,14 @@ unionDistinctSplit f leaf e
 -- | returns the value if it exists in the tree
 lookup :: MBB -> RTree a -> Maybe a
 lookup mbb = Lazy.lookup mbb . toLazy
+
+-- | returns all keys and values, which intersect with the given bounding box.
+intersectWithKey :: MBB -> RTree a -> [(MBB, a)]
+intersectWithKey mbb = Lazy.intersectWithKey mbb . toLazy
+
+-- | returns all values, which intersect with the given bounding box
+intersect :: MBB -> RTree a -> [a]
+intersect mbb = Lazy.intersect mbb . toLazy
 
 -- | returns all keys and values, which are located in the given bounding box.
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
