@@ -76,7 +76,7 @@ import qualified Data.RTree.MBB as MBB
 
 
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
-    deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid)
+    deriving (Show, Eq, Typeable, Generic, NFData, Binary, Semigroup, Monoid)
 
 -- | converts a lazy RTree into a strict RTree
 -- /O(n)/
