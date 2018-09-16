@@ -75,6 +75,7 @@ import qualified Data.RTree.Base as Lazy
 import           Data.RTree.MBB hiding (mbb)
 import qualified Data.RTree.MBB as MBB
 
+
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
     deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid, Semigroup)
 
