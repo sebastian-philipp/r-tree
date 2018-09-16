@@ -500,10 +500,10 @@ instance  (Binary a) => Binary (RTree a) where
                    _ -> fail "RTree.get: error while decoding RTree"
 
 
-instance Monoid a => Semigroup (RTree a) where
-    (<>) = unionWith mappend
+instance Semigroup (RTree a) where
+    (<>) = unionWith const
 
 
-instance Monoid a => Monoid (RTree a) where
+instance Monoid (RTree a) where
     mempty = empty
     mappend = (<>)
