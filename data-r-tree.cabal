@@ -21,11 +21,6 @@ cabal-version:       >=1.10
 
 bug-reports:         https://github.com/sebastian-philipp/r-tree/issues
 homepage:            https://github.com/sebastian-philipp/r-tree
-       
--- enable with cabal test -ftest-strict
-flag test-strict
-  default:      False
-  manual:       True  
 
 source-repository head
   type:         git
@@ -73,10 +68,7 @@ test-suite strict
   type:         exitcode-stdio-1.0
   main-is:      RTreeStrict.hs
 
-  if !flag(test-strict)
-    buildable: False
-  else
-    build-depends:
+  build-depends:
                 data-r-tree
               , base                       == 4.*
               , deepseq
