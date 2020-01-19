@@ -1,5 +1,5 @@
 name:                data-r-tree
-version:             0.0.5.0
+version:             0.0.6.0
 synopsis:            R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
 description:         R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
   
@@ -8,9 +8,9 @@ description:         R-Tree is a spatial data structure similar to Quadtrees or 
 
 license:             MIT
 license-file:        LICENSE
-author:              Sebastian Philipp, Birte Wagner
+author:              Sebastian Wagner, Birte Wagner
 maintainer:          sebastian@spawnhost.de
-copyright:           Sebastian Philipp, Birte Wagner
+copyright:           Sebastian Wagner, Birte Wagner
 category:            Data Structures
 build-type:          Simple
 
@@ -37,7 +37,6 @@ library
                        Data.RTree.Base
                        Data.RTree.Strict
   -- other-modules: 
-  other-extensions:    NoMonomorphismRestriction
   build-depends:       base        == 4.*,
                        deepseq     == 1.*,
                        binary      == 0.*
