@@ -79,6 +79,7 @@ import           Control.DeepSeq (NFData, rnf)
 import           GHC.Generics (Generic)
 
 import           Data.RTree.MBB hiding (mbb)
+import           Data.Semigroup
 
 data RTree a =
       Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
@@ -489,6 +490,9 @@ instance  (Binary a) => Binary (RTree a) where
                         return $! node mbb c
                    _ -> fail "RTree.get: error while decoding RTree"
 
+
+instance (Semigroup a) => Semigroup (RTree a) where
+    (<>) = unionWith (<>)
 
 instance (Monoid a) => Monoid (RTree a) where
     mempty = empty

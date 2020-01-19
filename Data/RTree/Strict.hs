@@ -64,6 +64,7 @@ import           Data.Function (on)
 import qualified Data.List as L (length)
 import qualified Data.Maybe as Maybe (mapMaybe)
 import           Data.Monoid (Monoid)
+import           Data.Semigroup
 import           Data.Typeable (Typeable)
 
 import           Control.DeepSeq (NFData)
@@ -74,9 +75,8 @@ import qualified Data.RTree.Base as Lazy
 import           Data.RTree.MBB hiding (mbb)
 import qualified Data.RTree.MBB as MBB
 
-
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
-    deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid)
+    deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid, Semigroup)
 
 -- | converts a lazy RTree into a strict RTree
 -- /O(n)/
