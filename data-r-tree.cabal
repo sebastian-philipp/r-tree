@@ -59,7 +59,7 @@ test-suite properties
 
   default-language:    Haskell2010
   other-extensions:    NoMonomorphismRestriction
-  ghc-options:  -Wall -fwarn-tabs
+  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
 
   hs-source-dirs:
                 test
@@ -83,7 +83,7 @@ test-suite strict
   default-language:
                 Haskell2010
 
-  ghc-options:  -Wall -fwarn-tabs
+  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
 
   hs-source-dirs:
                 test            
