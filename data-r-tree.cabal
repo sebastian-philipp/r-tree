@@ -68,6 +68,7 @@ test-suite properties
   type:                 exitcode-stdio-1.0
   main-is:              RTreeProperties.hs
   other-extensions:     NoMonomorphismRestriction
+  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
   hs-source-dirs:       test
 
 test-suite strict
@@ -82,4 +83,5 @@ test-suite strict
                       , test-framework-quickcheck2
   type:                 exitcode-stdio-1.0
   main-is:              RTreeStrict.hs
+  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
   hs-source-dirs:       test

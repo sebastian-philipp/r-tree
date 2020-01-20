@@ -15,8 +15,7 @@ import           Prelude                              hiding (lookup, map, null,
 import           Data.Binary (encode, decode)
 import           Data.Function (on)
 import           Data.List ((\\))
-import qualified Data.List as L (map, length)
-import           Debug.Trace                          (trace)
+import qualified Data.List as L (length)
 import           Control.Applicative ((<$>))
 
 import           Test.Framework
@@ -69,15 +68,10 @@ t_mbb6 = (MBB 0.0 0.0 0.0 0.0)
 t_mbb7 = (MBB 1.0 2.0 5.0 4.0)
 t_mbb8 = (MBB 4.0 0.0 6.0 3.0)
 
-t_1, t_2, t_3, t_4, t_5, t_6, t_7, t_8 :: RTree String
+t_1, t_2, t_3 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
-t_4 = singleton t_mbb4 "d"
-t_5 = singleton t_mbb5 "e"
-t_6 = singleton t_mbb6 "f"
-t_7 = singleton t_mbb7 "g"
-t_8 = singleton t_mbb8 "h"
 
 
 u_1, u_2, u_3 :: [(MBB, String)]
