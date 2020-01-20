@@ -14,6 +14,7 @@ import            Control.Applicative ((<$>))
 import            Control.DeepSeq                      (($!!))
 
 import            Data.Monoid
+
 import            Data.RTree.Strict
 import qualified  Data.RTree as L
 import            Data.RTree.MBB
@@ -24,10 +25,17 @@ import            GHC.AssertNF
 
 import            Test.Framework
 import            Test.Framework.Providers.HUnit
+import            Test.Framework.Providers.QuickCheck2 (testProperty)
+import            Test.QuickCheck.Arbitrary            as QA (Arbitrary, arbitrary, shrink)
+import            Test.QuickCheck.Monadic              as QM (PropertyM, monadicIO, pick, run, assert)
+import            Test.QuickCheck                      as Q (Property)
+
+import            Test.QuickCheck.Gen                  (suchThat)
+
 import            Test.HUnit                           hiding (Test, Testable)
 
 newtype Attr = A [Int]
-    deriving (Show)
+    deriving (Show, Semigroup)
 
 instance Monoid Attr where
     mempty = mkA []
@@ -99,7 +107,7 @@ main = defaultMain
 
        --  -- these test do not run properly with ghc-7.7-pre and ghc-heap-view-0.5.2
        --  -- no idea, whether patched ghc-heap-view or QuickCheck is the reason
-       --, testProperty "prop_simple" prop_simple
+       , testProperty "prop_simple" prop_simple
        --, testProperty "prop_union" prop_union
        --, testProperty "prop_diff" prop_diff
        ]
@@ -147,15 +155,31 @@ test_insertWith = insertWith mappend t_mbb6 (mkA' 6) tu_2
 test_toStrict :: RTree Attr
 test_toStrict = toStrict $ L.fromList u_2
 
+-- ########
+
+instance QA.Arbitrary MBB where
+    arbitrary = do
+        cx <- QA.arbitrary
+        cy <- QA.arbitrary
+        h <- QA.arbitrary `suchThat` (>=0)
+        w <- QA.arbitrary `suchThat` (>=0)
+        return $ MBB (cx - w) (cy - h) (cx + w) (cy + h)
+
+    shrink mbb@(MBB ulx uly brx bry)
+        | isPointMBB mbb = []
+        | otherwise      = [MBB (mid ulx brx) (mid uly bry) (mid ulx brx) (mid uly bry)]
+        where
+            mid x y = (y - x) / 2
 
 
---prop_simple :: Q.Property
---prop_simple = Q.monadicIO $ do
---                            l <- Q.pick Q.arbitrary
---                            passed <- Q.run $ do -- hPutStrLn stderr $ "\n" ++ show l
---                                                 -- hPutStrLn stderr $ "\n" ++ show (fromList''' l)
---                                                 isNF $! fromList''' l
---                            Q.assert passed
+prop_simple :: Q.Property
+prop_simple = QM.monadicIO $ do
+    l <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
+    passed <- QM.run $ do
+        -- hPutStrLn stderr $ "\n" ++ show l
+        -- hPutStrLn stderr $ "\n" ++ show (fromList''' l)
+        isNF $! fromList l
+    QM.assert passed
 
 --prop_union :: Q.Property
 --prop_union = Q.monadicIO $ do
