@@ -13,8 +13,6 @@ import            Prelude                              hiding (lookup, map, mapM
 import            Control.Applicative ((<$>))
 import            Control.DeepSeq                      (($!!))
 
-import            Data.Monoid
-
 import            Data.RTree.Strict
 import qualified  Data.RTree as L
 import            Data.RTree.MBB
@@ -165,9 +163,9 @@ instance QA.Arbitrary MBB where
         w <- QA.arbitrary `suchThat` (>=0)
         return $ MBB (cx - w) (cy - h) (cx + w) (cy + h)
 
-    shrink mbb@(MBB ulx uly brx bry)
-        | isPointMBB mbb = []
-        | otherwise      = [MBB (mid ulx brx) (mid uly bry) (mid ulx brx) (mid uly bry)]
+    shrink this_mbb@(MBB ulx uly brx bry)
+        | isPointMBB this_mbb = []
+        | otherwise           = [MBB (mid ulx brx) (mid uly bry) (mid ulx brx) (mid uly bry)]
         where
             mid x y = (y - x) / 2
 

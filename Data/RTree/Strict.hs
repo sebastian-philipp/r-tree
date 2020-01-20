@@ -68,7 +68,6 @@ import           Data.Semigroup
 import           Data.Typeable (Typeable)
 
 import           Control.DeepSeq (NFData)
-import           Data.Functor
 import           GHC.Generics (Generic)
 --import           Data.RTree.Base hiding (RTree, singleton, fromList, insertWith, unionDistinctWith, unionWith, insert, mapMaybe, union, fromList', unionDistinct, unionDistinctSplit)
 import qualified Data.RTree.Base as Lazy
@@ -282,7 +281,7 @@ length :: RTree a -> Int
 length = Lazy.length . toLazy
 
 -- | 'RTree' is not really a Functor.
--- Because thsi law dowsn't hold:
+-- Because this law doesn't hold:
 --
 -- prop> fmap id = id
 instance Functor RTree where
