@@ -13,3 +13,4 @@ imported ```qualified```, e.g.:
     > import qualified Data.RTree as RT
 
 this implemetation is incomplete at the moment. Feel free to send comments, patches or merge requests.
+
