@@ -2,6 +2,10 @@ name: Haskell CI
 
 on: [push]
 
+strategy:
+  matrix:
+    ghc-version: [8.4.4, 8.6.5, 8.8.2]
+
 jobs:
   build:
     runs-on: ubuntu-18.04
@@ -23,7 +27,7 @@ jobs:
         sudo apt-get -y install libpq5 libpq-dev
         sudo apt-get -y install alex-3.1.7 cabal-install-3.0 happy-1.19.5
         sudo apt-get -y install hpack hspec-discover libyaml-0-2
-        sudo apt-get -y install ghc-8.8.1
+        sudo apt-get -y install ghc-${{ matrix.ghc-version }}
         sudo apt-get -y install zip
         sudo apt-get -y install wget
 
