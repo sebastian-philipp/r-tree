@@ -36,14 +36,6 @@ jobs:
         cabal --version
         ghc --version
 
-    - name: Install cabal-cache tool
-      run: |
-        CACHE_TOOL_TAG=$(curl -s -X GET https://api.github.com/repos/haskell-works/cabal-cache/releases/latest | jq -rc .tag_name)
-        echo "Downloading: https://github.com/haskell-works/cabal-cache/releases/download/${CACHE_TOOL_TAG}/cabal-cache_x86_64_linux.tar.gz"
-        curl -Ls https://github.com/haskell-works/cabal-cache/releases/download/${CACHE_TOOL_TAG}/cabal-cache_x86_64_linux.tar.gz | tar -xvz -C /tmp/
-        sudo cp /tmp/cabal-cache /usr/local/bin/cabal-cache
-        cabal-cache version
-
     - name: Check cabal file
       run: cabal check
 
@@ -52,12 +44,6 @@ jobs:
 
     - name: Cabal Configure
       run: cabal v2-configure
-
-    - name: Restore cabal cache
-      run: |
-        cabal-cache sync-from-archive \
-          --threads       8                                                                             \
-          --archive-uri   http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/archive
 
     - name: Install dependencies
       run: cabal v2-build --enable-tests --enable-benchmarks --write-ghc-environment-files=always --only-dependencies
