@@ -12,7 +12,7 @@ workflows:
           name: GHC 8.2.2
           executor: haskell/ghc-8_2_2
           context: haskell-ci
-          binary-cache-uri: ${BINARY_CACHE_URI-"http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/archive"}
+          binary-cache-uri: http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/no-cache
           cabal-build-extra: --write-ghc-environment-files=ghc8.4.4+
           cabal-test-extra: --test-show-details=direct
 
@@ -20,7 +20,7 @@ workflows:
           name: GHC 8.4.4
           executor: haskell/ghc-8_4_4
           context: haskell-ci
-          binary-cache-uri: ${BINARY_CACHE_URI-"http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/archive"}
+          binary-cache-uri: http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/no-cache
           cabal-build-extra: --write-ghc-environment-files=ghc8.4.4+
           cabal-test-extra: --test-show-details=direct
 
@@ -28,7 +28,7 @@ workflows:
           name: GHC 8.6.5
           executor: haskell/ghc-8_6_5
           context: haskell-ci
-          binary-cache-uri: ${BINARY_CACHE_URI-"http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/archive"}
+          binary-cache-uri: http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/no-cache
           cabal-build-extra: --write-ghc-environment-files=ghc8.4.4+
           cabal-test-extra: --test-show-details=direct
 
@@ -36,7 +36,7 @@ workflows:
           name: GHC 8.8.1
           executor: haskell/ghc-8_8_1
           context: haskell-ci
-          binary-cache-uri: ${BINARY_CACHE_URI-"http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/archive"}
+          binary-cache-uri: http://hw-binary-cache-us-west-2-a.s3-website-us-west-2.amazonaws.com/no-cache
           cabal-build-extra: --write-ghc-environment-files=ghc8.4.4+
           cabal-test-extra: --test-show-details=direct
 
