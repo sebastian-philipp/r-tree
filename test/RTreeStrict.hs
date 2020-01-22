@@ -17,7 +17,7 @@ import            Data.RTree.Strict
 import qualified  Data.RTree as L
 import            Data.RTree.MBB
 
-import            GHC.AssertNF
+import qualified  GHC.AssertNF as NF
 
 -- import           System.IO
 
@@ -103,18 +103,15 @@ main = defaultMain
        --, testCase "m2 union m3" (checkIsNF $ m2 `union` m3)
        --, testCase "m2 unionWith m2" (checkIsNF $ unionWith mappend m2 m2)
 
-       --  -- these test do not run properly with ghc-7.7-pre and ghc-heap-view-0.5.2
-       --  -- no idea, whether patched ghc-heap-view or QuickCheck is the reason
-       , testProperty "prop_simple" prop_simple
-       --, testProperty "prop_union" prop_union
-       --, testProperty "prop_diff" prop_diff
+       , testProperty "prop_fromList" prop_fromList
+       , testProperty "prop_union" prop_union
        ]
 
 test_isNF :: Assertion
-test_isNF = fmap not (isNF [(1::Int)..10]) @? "isNF"
+test_isNF = fmap not (NF.isNF [(1::Int)..10]) @? "isNF"
 
 checkIsNF :: (Show a) => RTree a -> Assertion
-checkIsNF !m = isNF m @? ("isNF " ++ show m)
+checkIsNF !m = NF.isNF m @? ("isNF " ++ show m)
 
 -- some simple test data
 -- ------------------------
@@ -170,32 +167,20 @@ instance QA.Arbitrary MBB where
             mid x y = (y - x) / 2
 
 
-prop_simple :: Q.Property
-prop_simple = QM.monadicIO $ do
+prop_fromList :: Q.Property
+prop_fromList = QM.monadicIO $ do
     l <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
     passed <- QM.run $ do
         -- hPutStrLn stderr $ "\n" ++ show l
         -- hPutStrLn stderr $ "\n" ++ show (fromList''' l)
-        isNF $! fromList l
+        NF.isNF $! fromList l
     QM.assert passed
 
---prop_union :: Q.Property
---prop_union = Q.monadicIO $ do
---                            l1 <- Q.pick Q.arbitrary
---                            l2 <- Q.pick Q.arbitrary
---                            let sm = fromList''' l1 `union` fromList''' l2
---                            checkIsNFProp sm
-
-
---prop_diff :: Q.Property
---prop_diff = Q.monadicIO $ do
---                            l1 <- Q.pick Q.arbitrary
---                            l2 <- Q.pick Q.arbitrary
---                            let sm = fromList''' l1 `difference` fromList''' l2
---                            checkIsNFProp sm
-
---checkIsNFProp :: a -> Q.PropertyM IO ()
---checkIsNFProp sm = do
---                            passed <- Q.run $ isNF $! sm
---                            Q.run $ assertNF $! sm
---                            Q.assert passed
+prop_union :: Q.Property
+prop_union = QM.monadicIO $ do
+    l1 <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
+    l2 <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
+    passed <- QM.run $ do
+        let sm = fromList l1 `union` fromList l2
+        NF.isNF $! sm
+    QM.assert passed
