@@ -1,4 +1,4 @@
-{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, OverlappingInstances, DeriveDataTypeable, BangPatterns #-}
+{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, DeriveDataTypeable, BangPatterns #-}
 {-# LANGUAGE DeriveGeneric #-}
 
 {- |
