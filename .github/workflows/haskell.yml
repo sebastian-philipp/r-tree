@@ -2,12 +2,13 @@ name: Haskell CI
 
 on: [push]
 
-strategy:
-  matrix:
-    ghc-version: [8.4.4, 8.6.5, 8.8.2]
 
 jobs:
   build:
+    strategy:
+      matrix:
+        ghc-version: [8.4.4, 8.6.5, 8.8.2]
+  
     runs-on: ubuntu-18.04
 
     steps:
