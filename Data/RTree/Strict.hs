@@ -44,6 +44,8 @@ module Data.RTree.Strict
     , unionWith
     -- * Searching and Properties
     , lookup
+    , intersectWithKey
+    , intersect
     , lookupRange
     , lookupRangeWithKey
     , lookupContainsRange
@@ -63,7 +65,6 @@ import           Data.Binary
 import           Data.Function (on)
 import qualified Data.List as L (length)
 import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Monoid (Monoid)
 import           Data.Semigroup
 import           Data.Typeable (Typeable)
 
@@ -73,6 +74,7 @@ import           GHC.Generics (Generic)
 import qualified Data.RTree.Base as Lazy
 import           Data.RTree.MBB hiding (mbb)
 import qualified Data.RTree.MBB as MBB
+
 
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
     deriving (Show, Eq, Typeable, Generic, NFData, Binary, Monoid, Semigroup)
@@ -210,6 +212,14 @@ unionDistinctSplit f leaf e
 -- | returns the value if it exists in the tree
 lookup :: MBB -> RTree a -> Maybe a
 lookup mbb = Lazy.lookup mbb . toLazy
+
+-- | returns all keys and values, which intersect with the given bounding box.
+intersectWithKey :: MBB -> RTree a -> [(MBB, a)]
+intersectWithKey mbb = Lazy.intersectWithKey mbb . toLazy
+
+-- | returns all values, which intersect with the given bounding box
+intersect :: MBB -> RTree a -> [a]
+intersect mbb = Lazy.intersect mbb . toLazy
 
 -- | returns all keys and values, which are located in the given bounding box.
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]

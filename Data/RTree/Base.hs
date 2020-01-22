@@ -1,5 +1,9 @@
-{-# LANGUAGE NoMonomorphismRestriction, DeriveFunctor, DeriveDataTypeable, BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE BangPatterns              #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
+{-# LANGUAGE DeriveFunctor             #-}
+{-# LANGUAGE DeriveGeneric             #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 
 {- |
     Module     : Data.RTree.Base
@@ -31,6 +35,8 @@ module Data.RTree.Base
     , unionWith
     -- * Searching and Properties
     , lookup
+    , intersectWithKey
+    , intersect
     , lookupRange
     , lookupRangeWithKey
     , lookupContainsRangeWithKey
@@ -62,24 +68,19 @@ module Data.RTree.Base
 )
 where
 
-import           Prelude hiding (lookup, length, null, map)
-
-import           Data.Binary
-import           Data.Function (on)
-import           Data.List (maximumBy, minimumBy, partition)
-import qualified Data.List as L (length,map)
-import           Data.Maybe (catMaybes, isJust)
-import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Monoid (Monoid, mempty, mappend)
-import           Data.Typeable (Typeable)
-
-import           Control.Applicative ((<$>))
 import           Control.DeepSeq (NFData, rnf)
-
-import           GHC.Generics (Generic)
-
-import           Data.RTree.MBB hiding (mbb)
+import           Data.Binary
+import           Data.Function   (on)
+import           Data.List       (maximumBy, minimumBy, partition)
+import qualified Data.List       as L (length, map)
+import           Data.Maybe      (catMaybes, isJust)
+import qualified Data.Maybe      as Maybe (mapMaybe)
+import           Data.Typeable   (Typeable)
 import           Data.Semigroup
+import           GHC.Generics    (Generic)
+import           Prelude         hiding (length, lookup, map, null)
+
+import           Data.RTree.MBB  hiding (mbb)
 
 data RTree a =
       Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
@@ -115,7 +116,7 @@ null _     = False
 
 -- | creates a single element tree
 singleton :: MBB -> a -> RTree a
-singleton mbb x = Leaf mbb x
+singleton = Leaf
 
 node :: MBB -> [RTree a] -> RTree a
 node mbb [x,y]     = Node2 mbb x y
@@ -131,19 +132,19 @@ norm :: RTree a -> RTree a
 norm (Node4 mbb x y z w) = Node mbb [x,y,z,w]
 norm (Node3 mbb x y z)   = Node mbb [x,y,z]
 norm (Node2 mbb x y)     = Node mbb [x,y]
-norm x = x
+norm x                   = x
 
 getChildren :: RTree a -> [RTree a]
-getChildren Empty = error "getChildren: Empty"
+getChildren Empty  = error "getChildren: Empty"
 getChildren Leaf{} = error "getChildren: Leaf"
-getChildren t = getChildren' $ norm t
+getChildren t      = getChildren' $ norm t
 
 -- ----------------------------------
 -- Lists
 
 -- | creates a tree out of pairs
 fromList :: [(MBB, a)] -> RTree a
-fromList l = fromList' $ (uncurry singleton) <$> l
+fromList l = fromList' $ uncurry singleton <$> l
 
 -- | merges all singletons into a single tree.
 fromList' :: [RTree a] -> RTree a
@@ -154,27 +155,21 @@ fromList' ts = foldr1 unionDistinct ts
 --
 -- prop> toList t = zip (keys t) (values t)
 toList :: RTree a -> [(MBB, a)]
-toList Empty = []
+toList Empty        = []
 toList (Leaf mbb x) = [(mbb, x)]
-toList t = concatMap toList $ getChildren t
+toList t            = concatMap toList $ getChildren t
 
 -- | returns all keys in this tree
 --
 -- prop> toList t = zip (keys t) (values t)
 keys :: RTree a -> [MBB]
-keys = foldWithMBB handleLeaf handleNode []
-    where
-    handleLeaf mbb _ = [mbb]
-    handleNode _ xs  = concat xs
+keys = foldWithMBB (\mbb _ -> [mbb]) (const concat) []
 
 -- | returns all values in this tree
 --
 -- prop> toList t = zip (keys t) (values t)
 values :: RTree a -> [a]
-values = foldWithMBB handleLeaf handleNode []
-    where
-    handleLeaf _ x = [x]
-    handleNode _ xs  = concat xs
+values = foldWithMBB (const pure) (const concat) []
 
 
 -- ----------------------------------
@@ -182,7 +177,7 @@ values = foldWithMBB handleLeaf handleNode []
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. The combining function will be used if the value already exists.
 insertWith :: (a -> a -> a) -> MBB -> a -> RTree a -> RTree a
-insertWith f mbb e oldRoot = unionDistinctWith f (singleton mbb e) oldRoot
+insertWith f mbb e = unionDistinctWith f (singleton mbb e)
 
 -- | Inserts an element whith the given 'MBB' and a value in a tree. An existing value will be overwritten with the given one.
 --
@@ -192,7 +187,7 @@ insert = insertWith const
 
 simpleMergeEqNode :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 simpleMergeEqNode f l@Leaf{} r = Leaf (getMBB l) (on f getElem l r)
-simpleMergeEqNode _ l _ = l
+simpleMergeEqNode _ l _        = l
 
 -- | Unifies left and right 'RTree'. Will create invalid trees, if the tree is not a leaf and contains 'MBB's which
 --  also exists in the left tree. Much faster than union, though.
@@ -200,13 +195,13 @@ unionDistinctWith :: (a -> a -> a) -> RTree a -> RTree a -> RTree a
 unionDistinctWith _ Empty{} t           = t
 unionDistinctWith _ t       Empty{}     = t
 unionDistinctWith f t1@Leaf{} t2@Leaf{}
-    | on (==) getMBB t1 t2              = simpleMergeEqNode f t1 t2
-    | otherwise                         = createNodeWithChildren [t1, t2] -- root case
+    | on (==) getMBB t1 t2 = simpleMergeEqNode f t1 t2
+    | otherwise            = createNodeWithChildren [t1, t2] -- root case
 unionDistinctWith f left right
-    | depth left > depth right              = unionDistinctWith f right left
-    | depth left == depth right             = fromList' $ (getChildren left) ++ [right]
-    | (L.length $ getChildren newNode) > n  = createNodeWithChildren $ splitNode newNode
-    | otherwise                             = newNode
+    | depth left > depth right            = unionDistinctWith f right left
+    | depth left == depth right           = fromList' $ getChildren left ++ [right]
+    | L.length (getChildren newNode) > n  = createNodeWithChildren $ splitNode newNode
+    | otherwise                           = newNode
     where
     newNode = addLeaf f left right
 
@@ -223,15 +218,15 @@ addLeaf f left right
     newChildren = findNodeWithMinimalAreaIncrease f left (getChildren right)
     (eq, nonEq) = partition (on (==) getMBB left) $ getChildren right
     newNode = case eq of
-        [] -> left
+        []  -> left
         [x] -> simpleMergeEqNode f left x
-        _ -> error "addLeaf: invalid RTree"
+        _   -> error "addLeaf: invalid RTree"
 
 findNodeWithMinimalAreaIncrease :: (a -> a -> a) -> RTree a -> [RTree a] -> [RTree a]
 findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
     where
 --  xsAndIncrease :: [(RTree a, Double)]
-    xsAndIncrease = zip children ((areaIncreasesWith leaf) <$> children)
+    xsAndIncrease = zip children $ areaIncreasesWith leaf <$> children
     minimalIncrease = minimum $ snd <$> xsAndIncrease
 --  xsAndIncrease' :: [(RTree a, Double)]
     splitMinimal [] = []
@@ -241,7 +236,7 @@ findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
 
 unionDistinctSplit :: (a -> a -> a) -> RTree a -> RTree a -> [RTree a]
 unionDistinctSplit f leaf e
-    | (L.length $ getChildren newLeaf) > n = splitNode newLeaf
+    | L.length (getChildren newLeaf) > n = splitNode newLeaf
     | otherwise = [newLeaf]
     where
     newLeaf = addLeaf f leaf e
@@ -266,22 +261,22 @@ findGreatestArea xs = (x', y')
 quadSplit :: [RTree a] -> [RTree a] -> [RTree a] -> ([RTree a], [RTree a])
 quadSplit left right [] = (left, right)
 quadSplit left right unfinished
-    | (L.length left) + (L.length unfinished)  <= m = (left ++ unfinished, right)
-    | (L.length right) + (L.length unfinished) <= m = (left, right ++ unfinished)
+    | L.length left + L.length unfinished  <= m = (left ++ unfinished, right)
+    | L.length right + L.length unfinished <= m = (left, right ++ unfinished)
     | isLeft''                                      = quadSplit (minimumElem : left) right  newRest
     | otherwise                                     = quadSplit left  (minimumElem : right) newRest
         where
 --      makeTripel :: RTree a -> (RTree a, Bool, Double)
         makeTripel x = (x, isLeft, growth)
             where
-            isLeft = (areaIncreasesWithLeft) < (areaIncreasesWithRight)
-            growth = case isLeft of
-                True -> areaIncreasesWithLeft
-                False -> areaIncreasesWithRight
-            areaIncreasesWithLeft  = (areaIncreasesWith x (createNodeWithChildren left))
-            areaIncreasesWithRight = (areaIncreasesWith x (createNodeWithChildren right))
+            isLeft = areaIncreasesWithLeft < areaIncreasesWithRight
+            growth = if isLeft
+                     then areaIncreasesWithLeft
+                     else areaIncreasesWithRight
+            areaIncreasesWithLeft  = areaIncreasesWith x $ createNodeWithChildren left
+            areaIncreasesWithRight = areaIncreasesWith x $ createNodeWithChildren right
         (minimumElem, isLeft'', _) = minimumBy (compare `on` (\(_,_,g) -> g)) $ makeTripel <$> unfinished
-        newRest = (filter (on (/=) getMBB minimumElem) unfinished)
+        newRest = filter (on (/=) getMBB minimumElem) unfinished
 
 --mergeNodes :: RTree a -> RTree a -> RTree a
 --mergeNodes x@Node{} y@Node{} = node (unionMBB' x y) (on (++) getChildren x y)
@@ -307,11 +302,26 @@ lookup mbb t@Leaf{}
     | mbb == getMBB t = Just $ getElem t
     | otherwise = Nothing
 lookup mbb t = case founds of
-    [] -> Nothing
+    []  -> Nothing
     x:_ -> Just x
     where
     matches = filter (\x -> (getMBB x) `containsMBB` mbb) $ getChildren t
     founds = catMaybes $ L.map (lookup mbb) matches
+
+-- | returns all keys and values, which intersects with the given bounding box.
+intersectWithKey :: MBB -> RTree a -> [(MBB, a)]
+intersectWithKey _ Empty = []
+intersectWithKey mbb t@Leaf{}
+    | isJust $ intersectMBB mbb (getMBB t) = [(getMBB t, getElem t)]
+    | otherwise = []
+intersectWithKey mbb t = founds
+    where matches = filter intersectRTree $ getChildren t
+          founds = concatMap (intersectWithKey mbb) matches
+          intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
+
+-- | returns all values, which intersects with the given bounding box.
+intersect :: MBB -> RTree a -> [a]
+intersect mbb t = snd <$> intersectWithKey mbb t
 
 -- | returns all keys and values, which are located in the given bounding box.
 lookupRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
@@ -414,7 +424,7 @@ isValid :: Show b => b -> RTree a -> Bool
 isValid _ Empty = True
 isValid _ Leaf{} = True
 isValid context x = case L.length c >= m && L.length c <= n && (and $ (isValid context) <$> c) && (isBalanced x) of
-    True -> True
+    True  -> True
     False -> error ( "invalid " ++ show (L.length c) ++ " " ++ show context )
     where
     isBalanced :: RTree a -> Bool
@@ -450,15 +460,15 @@ pp' i (Node4 mbb c1 c2 c3 c4) = do
 -- ----------------------
 
 depth :: RTree a -> Int
-depth Empty = 0
+depth Empty       = 0
 depth (Leaf _ _ ) = 1
-depth t = 1 + (depth $ head $ getChildren t)
+depth t           = 1 + (depth $ head $ getChildren t)
 
 -- | returns the number of elements in a tree
 length :: RTree a -> Int
-length Empty = 0
+length Empty     = 0
 length (Leaf {}) = 1
-length t = sum $ length <$> (getChildren t)
+length t         = sum $ length <$> (getChildren t)
 
 --delete' :: MBB -> RTree a -> Either (RTree a) [(MBB, a)]
 
@@ -494,6 +504,6 @@ instance  (Binary a) => Binary (RTree a) where
 instance (Semigroup a) => Semigroup (RTree a) where
     (<>) = unionWith (<>)
 
-instance (Monoid a) => Monoid (RTree a) where
+instance Monoid a => Monoid (RTree a) where
     mempty = empty
-    mappend = unionWith mappend
+    mappend = (<>)

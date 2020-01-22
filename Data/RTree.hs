@@ -43,6 +43,8 @@ module Data.RTree
     , unionWith
     -- * Searching and Properties
     , lookup
+    , intersectWithKey
+    , intersect
     , lookupRange
     , lookupRangeWithKey
     , lookupContainsRange
