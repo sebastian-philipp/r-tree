@@ -1,0 +1,59 @@
+name: Haskell CI
+
+on: [push]
+
+strategy:
+  matrix:
+    ghc-version: [8.4.4, 8.6.5, 8.8.2]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Install Haskell build environment
+      run: |
+        sudo apt-get update
+        sudo apt-get -y install software-properties-common
+        sudo add-apt-repository ppa:hvr/ghc
+
+        sudo apt-get -y install locales curl sudo git
+        sudo apt-get -y install g++ libstdc++6
+        sudo apt-get -y install libsnappy1v5 libtinfo-dev libsnappy-dev jq
+        sudo apt-get -y install zlib1g zlib1g-dev
+        sudo apt-get -y install libz3-dev
+        sudo apt-get -y install libpq5 libpq-dev
+        sudo apt-get -y install alex-3.1.7 cabal-install-3.0 happy-1.19.5
+        sudo apt-get -y install hpack hspec-discover libyaml-0-2
+        sudo apt-get -y install ghc-${{ matrix.ghc-version }}
+        sudo apt-get -y install zip
+        sudo apt-get -y install wget
+
+        sudo apt-get -y remove --purge software-properties-common
+        sudo apt-get -y autoremove
+
+        sudo ln -s /opt/cabal/bin/cabal /usr/local/bin/cabal
+        sudo ln -s /opt/ghc/bin/ghc /usr/local/bin/ghc
+        sudo ln -s /opt/ghc/bin/ghc-pkg /usr/local/bin/ghc-pkg
+        cabal --version
+        ghc --version
+
+    - name: Check cabal file
+      run: cabal check
+
+    - name: Cabal update
+      run: cabal v2-update
+
+    - name: Cabal Configure
+      run: cabal v2-configure
+
+    - name: Install dependencies
+      run: cabal v2-build --enable-tests --enable-benchmarks --write-ghc-environment-files=always --only-dependencies
+
+    - name: Build
+      run: cabal v2-build --enable-tests --enable-benchmarks --write-ghc-environment-files=always
+
+    - name: Run tests
+      run: cabal v2-test --enable-tests --enable-benchmarks --write-ghc-environment-files=always
