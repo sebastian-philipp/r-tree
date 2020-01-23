@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns               #-}
 {-# LANGUAGE DeriveDataTypeable         #-}
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- |
@@ -59,21 +59,20 @@ module Data.RTree.Strict
     , toList
 ) where
 
-import           Prelude hiding (lookup, length, null, map)
+import           Prelude         hiding (length, lookup, map, null)
 
 import           Data.Binary
-import           Data.Function (on)
-import qualified Data.List as L (length)
-import qualified Data.Maybe as Maybe (mapMaybe)
-import           Data.Semigroup
-import           Data.Typeable (Typeable)
+import           Data.Function   (on)
+import qualified Data.List       as L (length)
+import qualified Data.Maybe      as Maybe (mapMaybe)
+import           Data.Typeable   (Typeable)
 
 import           Control.DeepSeq (NFData)
-import           GHC.Generics (Generic)
+import           GHC.Generics    (Generic)
 --import           Data.RTree.Base hiding (RTree, singleton, fromList, insertWith, unionDistinctWith, unionWith, insert, mapMaybe, union, fromList', unionDistinct, unionDistinctSplit)
 import qualified Data.RTree.Base as Lazy
-import           Data.RTree.MBB hiding (mbb)
-import qualified Data.RTree.MBB as MBB
+import           Data.RTree.MBB  hiding (mbb)
+import qualified Data.RTree.MBB  as MBB
 
 
 newtype RTree a = RTree {toLazy' :: Lazy.RTree a}
@@ -183,9 +182,9 @@ addLeaf f left right
     newChildren = findNodeWithMinimalAreaIncrease f left (Lazy.getChildren right)
     (eq, nonEq) = Lazy.partition (on (==) Lazy.getMBB left) $ Lazy.getChildren right
     newNode = case eq of
-        [] -> left
+        []  -> left
         [x] -> simpleMergeEqNode f left x
-        _ -> error "addLeaf: invalid RTree"
+        _   -> error "addLeaf: invalid RTree"
 
 findNodeWithMinimalAreaIncrease :: (a -> a -> a) -> Lazy.RTree a -> [Lazy.RTree a] -> [Lazy.RTree a]
 findNodeWithMinimalAreaIncrease f leaf children = splitMinimal xsAndIncrease
