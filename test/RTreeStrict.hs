@@ -2,35 +2,26 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables        #-}
 
-module Main
-where
+module Main where
 
 -- import qualified Data.RTree                       as Lazy    -- just for dev.
-import            Prelude                              hiding (lookup, map, mapM,
-                                                       null, succ)
 
---import           Control.Arrow                        (second)
-import            Control.Applicative ((<$>))
-import            Control.DeepSeq                      (($!!))
+import Control.Applicative         ((<$>))
+import Control.DeepSeq             (($!!))
+import Control.Monad.IO.Class
+import Data.RTree.MBB
+import Data.RTree.Strict
+import HaskellWorks.Hspec.Hedgehog
+import Hedgehog
+import Prelude                     hiding (lookup, map, mapM, null, succ)
+import Test.Hspec
+import Test.HUnit                  hiding (Test, Testable)
 
-import            Data.RTree.Strict
-import qualified  Data.RTree as L
-import            Data.RTree.MBB
-
-import qualified  GHC.AssertNF as NF
-
--- import           System.IO
-
-import            Test.Framework
-import            Test.Framework.Providers.HUnit
-import            Test.Framework.Providers.QuickCheck2 (testProperty)
-import            Test.QuickCheck.Arbitrary            as QA (Arbitrary, arbitrary, shrink)
-import            Test.QuickCheck.Monadic              as QM (PropertyM, monadicIO, pick, run, assert)
-import            Test.QuickCheck                      as Q (Property)
-
-import            Test.QuickCheck.Gen                  (suchThat)
-
-import            Test.HUnit                           hiding (Test, Testable)
+import qualified Data.RTree     as L
+import qualified Gen            as G
+import qualified GHC.AssertNF   as NF
+import qualified Hedgehog.Gen   as G
+import qualified Hedgehog.Range as R
 
 newtype Attr = A [Int]
     deriving (Show, Semigroup)
@@ -72,40 +63,49 @@ consA n a = mkA [n] `mappend` a
 default (Int)
 
 main :: IO ()
-main = defaultMain
-       [
-         testCase "isNF" test_isNF
-       , testCase "empty" (checkIsNF (empty :: RTree ()))
-       , testCase "t_1" (checkIsNF t_1)
-       , testCase "tu_1" (checkIsNF tu_1)
-       , testCase "tu_2" (checkIsNF tu_2)
-       , testCase "tu_2" (checkIsNF test_union)
-       , testCase "test_insertWith1" (checkIsNF test_insertWith1)
-       , testCase "test_insertWith" (checkIsNF test_insertWith)
-       , testCase "test_map" (checkIsNF test_map)
-       , testCase "test_toStrict" (checkIsNF test_toStrict)
+main = hspec $ do
+  it "isNF" test_isNF
+  it "empty" (checkIsNF (empty :: RTree ()))
+  it "t_1" (checkIsNF t_1)
+  it "tu_1" (checkIsNF tu_1)
+  it "tu_2" (checkIsNF tu_2)
+  it "tu_2" (checkIsNF test_union)
+  it "test_insertWith1" (checkIsNF test_insertWith1)
+  it "test_insertWith" (checkIsNF test_insertWith)
+  it "test_map" (checkIsNF test_map)
+  it "test_toStrict" (checkIsNF test_toStrict)
 
+  -- it "m1" (checkIsNF m1)
+  -- it "m2" (checkIsNF m2)
+  -- it "m3" (checkIsNF m3)
+  -- it "m5" (checkIsNF m3)
+  -- it "m6" (checkIsNF m3)
+  -- it "m7 (map test)" (checkIsNF m7)
+  -- it "fromList l4" (checkIsNF $ fromList l4)
+  -- it "m8 (fromList''' ll)" (checkIsNF m8)
 
-       --, testCase "m1" (checkIsNF m1)
-       --, testCase "m2" (checkIsNF m2)
-       --, testCase "m3" (checkIsNF m3)
-       --, testCase "m5" (checkIsNF m3)
-       --, testCase "m6" (checkIsNF m3)
-       --, testCase "m7 (map test)" (checkIsNF m7)
-       --, testCase "fromList l4" (checkIsNF $ fromList l4)
-       --, testCase "m8 (fromList''' ll)" (checkIsNF m8)
+  -- it "adjust m6" (checkIsNF $ adjust (consA 42) "ab" m6)
+  -- it "adjust m1" (checkIsNF $ adjust (consA 42) "xx" m1)
+  -- it "delete m6" (checkIsNF $ delete "ab" m6)
+  -- it "delete m1" (checkIsNF $ delete "xx" m1)
 
-       --, testCase "adjust m6" (checkIsNF $ adjust (consA 42) "ab" m6)
-       --, testCase "adjust m1" (checkIsNF $ adjust (consA 42) "xx" m1)
-       --, testCase "delete m6" (checkIsNF $ delete "ab" m6)
-       --, testCase "delete m1" (checkIsNF $ delete "xx" m1)
+  -- it "m2 union m3" (checkIsNF $ m2 `union` m3)
+  -- it "m2 unionWith m2" (checkIsNF $ unionWith mappend m2 m2)
 
-       --, testCase "m2 union m3" (checkIsNF $ m2 `union` m3)
-       --, testCase "m2 unionWith m2" (checkIsNF $ unionWith mappend m2 m2)
+  it "prop_fromList" $ requireProperty $ do
+    l <- forAll $ G.list (R.linear 0 100) $ (,) <$> G.mbb <*> G.int R.constantBounded
+    -- hPutStrLn stderr $ "\n" ++ show l
+    -- hPutStrLn stderr $ "\n" ++ show (fromList''' l)
+    passed <- liftIO $ NF.isNF $! fromList l
+    Hedgehog.assert passed
 
-       , testProperty "prop_fromList" prop_fromList
-       , testProperty "prop_union" prop_union
-       ]
+  it "prop_union" $ requireProperty $ do
+    l1 <- forAll $ G.list (R.linear 0 100) $ (,) <$> G.mbb <*> G.int R.constantBounded
+    l2 <- forAll $ G.list (R.linear 0 100) $ (,) <$> G.mbb <*> G.int R.constantBounded
+    passed <- liftIO $ do
+      let sm = fromList l1 `union` fromList l2
+      NF.isNF $! sm
+    Hedgehog.assert passed
 
 test_isNF :: Assertion
 test_isNF = fmap not (NF.isNF [(1::Int)..10]) @? "isNF"
@@ -149,38 +149,3 @@ test_insertWith = insertWith mappend t_mbb6 (mkA' 6) tu_2
 
 test_toStrict :: RTree Attr
 test_toStrict = toStrict $ L.fromList u_2
-
--- ########
-
-instance QA.Arbitrary MBB where
-    arbitrary = do
-        cx <- QA.arbitrary
-        cy <- QA.arbitrary
-        h <- QA.arbitrary `suchThat` (>=0)
-        w <- QA.arbitrary `suchThat` (>=0)
-        return $ MBB (cx - w) (cy - h) (cx + w) (cy + h)
-
-    shrink this_mbb@(MBB ulx uly brx bry)
-        | isPointMBB this_mbb = []
-        | otherwise           = [MBB (mid ulx brx) (mid uly bry) (mid ulx brx) (mid uly bry)]
-        where
-            mid x y = (y - x) / 2
-
-
-prop_fromList :: Q.Property
-prop_fromList = QM.monadicIO $ do
-    l <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
-    passed <- QM.run $ do
-        -- hPutStrLn stderr $ "\n" ++ show l
-        -- hPutStrLn stderr $ "\n" ++ show (fromList''' l)
-        NF.isNF $! fromList l
-    QM.assert passed
-
-prop_union :: Q.Property
-prop_union = QM.monadicIO $ do
-    l1 <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
-    l2 <- (QM.pick QA.arbitrary) :: QM.PropertyM IO [(MBB, Int)]
-    passed <- QM.run $ do
-        let sm = fromList l1 `union` fromList l2
-        NF.isNF $! sm
-    QM.assert passed
