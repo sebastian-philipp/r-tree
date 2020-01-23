@@ -76,7 +76,6 @@ import qualified Data.List       as L (length, map)
 import           Data.Maybe      (catMaybes, isJust)
 import qualified Data.Maybe      as Maybe (mapMaybe)
 import           Data.Typeable   (Typeable)
-import           Data.Semigroup
 import           GHC.Generics    (Generic)
 import           Prelude         hiding (length, lookup, map, null)
 
