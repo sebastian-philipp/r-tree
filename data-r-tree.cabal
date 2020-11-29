@@ -1,7 +1,7 @@
 cabal-version: 2.2
 
 name:                   data-r-tree
-version:                0.6.0
+version:                0.6.1
 synopsis:               R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
 description:            R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
   

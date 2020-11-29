@@ -17,3 +17,8 @@
 * Now supports GHC 8.4, 8.5 and 8.6.
 * Removed `test-strict` flag.
 * Minimal Bounding Box is now also an instance of `Ord`
+
+
+## 0.6.1
+
+* Add `lookupTouchesRangeWithKey` and `lookupTouchesRange`.

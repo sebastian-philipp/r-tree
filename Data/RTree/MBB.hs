@@ -21,6 +21,7 @@ module Data.RTree.MBB
     mbb,
     area,
     containsMBB,
+    touchesMBB,
     unionMBB,
     unionsMBB,
     intersectMBB,
@@ -31,22 +32,23 @@ where
 
 import Data.Binary
 
+import           Data.Maybe (isJust)
 import GHC.Generics (Generic)
 
 -- | Minimal bounding box
 data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
     deriving (Eq, Generic, Ord)
 
--- | created a minimal bounding box (or a rectangle)
--- The first point must be smaller, than the second one. This is unchecked.
-mbb :: Double -- ^ x - coordinate of first point
-    -> Double   -- ^ y - coordinate of first point
-    -> Double   -- ^ x - coordinate of second point
-    -> Double   -- ^ x - coordinate of second point
+-- | create a minimal bounding box (or a rectangle)
+-- The first point must be smaller, than the second one. This is unchecked. To make sense of the following components, visualize x-axis pointing to the right and y-axis pointing downwards; u=upper, b=bottom, l=left,r=right.
+mbb :: Double -- ^ x - coordinate of first  point (ulx)
+    -> Double -- ^ y - coordinate of first  point (uly)
+    -> Double -- ^ x - coordinate of second point (brx)
+    -> Double -- ^ y - coordinate of second point (bry)
     -> MBB
 mbb = MBB
 
--- | the property, that a 'MBB' must hold
+-- | the property that a 'MBB' must hold, namely that the first point must be smaller than the second one.
 isValidMBB :: MBB -> Bool
 isValidMBB (MBB ulx uly brx bry) = (ulx <= brx) && (uly <= bry)
 
@@ -69,6 +71,12 @@ area (MBB ulx uly brx bry) = (brx - ulx) * (bry - uly)
 -- | returns True, when the first mbb contains the second
 containsMBB :: MBB -> MBB -> Bool
 containsMBB (MBB x11 y11 x12 y12) (MBB x21 y21 x22 y22) =  x11 <= x21 && y11 <= y21 && x12 >= x22 && y12 >= y22
+
+
+-- | returns True, when the two mbbs touch each other
+touchesMBB :: MBB -> MBB -> Bool
+touchesMBB mbb1 mbb2 = isJust $ mbb1 `intersectMBB` mbb2
+
 
 -- | returns the intersection of both mbbs. Returns Nothing, if they don't intersect.
 intersectMBB :: MBB -> MBB -> Maybe MBB

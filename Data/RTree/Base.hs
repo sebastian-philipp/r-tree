@@ -41,6 +41,8 @@ module Data.RTree.Base
     , lookupRangeWithKey
     , lookupContainsRangeWithKey
     , lookupContainsRange
+    , lookupTouchesRangeWithKey
+    , lookupTouchesRange
     , length
     , null
     , keys
@@ -317,7 +319,7 @@ intersectWithKey mbb t@Leaf{}
 intersectWithKey mbb t = founds
     where matches = filter intersectRTree $ getChildren t
           founds = concatMap (intersectWithKey mbb) matches
-          intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
+          intersectRTree x = mbb `touchesMBB` (getMBB x)
 
 -- | returns all values, which intersects with the given bounding box.
 intersect :: MBB -> RTree a -> [a]
@@ -333,7 +335,7 @@ lookupRangeWithKey mbb t = founds
     where
     matches = filter intersectRTree $ getChildren t
     founds = concatMap (lookupRangeWithKey mbb) matches
-    intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
+    intersectRTree x = mbb `touchesMBB` (getMBB x)
 
 -- | returns all values, which are located in the given bounding box.
 lookupRange :: MBB -> RTree a -> [a]
@@ -354,6 +356,24 @@ lookupContainsRangeWithKey mbb t = founds
 -- | returns all values containing the given bounding box
 lookupContainsRange :: MBB -> RTree a -> [a]
 lookupContainsRange mbb t = snd <$> (lookupContainsRangeWithKey mbb t)
+
+
+-- | returns all keys and values touching the given bounding box
+lookupTouchesRangeWithKey :: MBB -> RTree a -> [(MBB, a)]
+lookupTouchesRangeWithKey _ Empty = []
+lookupTouchesRangeWithKey mbb t@Leaf{}
+    | (getMBB t) `touchesMBB` mbb = [(getMBB t, getElem t)]
+    | otherwise = []
+lookupTouchesRangeWithKey mbb t = founds
+    where
+    matches = filter intersectRTree $ getChildren t
+    founds = concatMap (lookupTouchesRangeWithKey mbb) matches
+    intersectRTree x = mbb `touchesMBB` (getMBB x)
+
+-- | returns all values touching the given bounding box
+lookupTouchesRange :: MBB -> RTree a -> [a]
+lookupTouchesRange mbb t = snd <$> (lookupTouchesRangeWithKey mbb t)
+
 
 -- -----------
 -- delete
