@@ -11,6 +11,7 @@
   Portability: not portable
 
   This module provides a minimal bounding box.
+
 -}
 
 
@@ -29,15 +30,14 @@ module Data.RTree.MBB
 )
 where
 
-import           Data.Binary
+import Data.Binary
 
-import           Control.Applicative ((<$>), (<*>))
 import           Data.Maybe (isJust)
-import           GHC.Generics (Generic)
+import GHC.Generics (Generic)
 
 -- | Minimal bounding box
 data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
-    deriving (Eq, Generic)
+    deriving (Eq, Generic, Ord)
 
 -- | create a minimal bounding box (or a rectangle)
 -- The first point must be smaller, than the second one. This is unchecked. To make sense of the following components, visualize x-axis pointing to the right and y-axis pointing downwards; u=upper, b=bottom, l=left,r=right.
