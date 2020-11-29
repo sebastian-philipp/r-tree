@@ -43,6 +43,8 @@ main = do
            , testCase "test_lookupRangeWithKey" test_lookupRangeWithKey
            , testCase "test_lookupContainsRange" test_lookupContainsRange
            , testCase "test_lookupContainsRangeWithKey" test_lookupContainsRangeWithKey
+           , testCase "test_lookupTouchesRange" test_lookupTouchesRange
+           , testCase "test_lookupTouchesRangeWithKey" test_lookupTouchesRangeWithKey
            , testCase "test_union" test_union
            , testCase "test_unionWith" test_unionWith
            , testCase "test_length" test_length
@@ -68,10 +70,15 @@ t_mbb6 = (MBB 0.0 0.0 0.0 0.0)
 t_mbb7 = (MBB 1.0 2.0 5.0 4.0)
 t_mbb8 = (MBB 4.0 0.0 6.0 3.0)
 
-t_1, t_2, t_3 :: RTree String
+t_1, t_2, t_3, t_4, t_5, t_6, t_7, t_8 :: RTree String
 t_1 = singleton t_mbb1 "a"
 t_2 = singleton t_mbb2 "b"
 t_3 = singleton t_mbb3 "c"
+t_4 = singleton t_mbb4 "d"
+t_5 = singleton t_mbb5 "e"
+t_6 = singleton t_mbb6 "f"
+t_7 = singleton t_mbb7 "g"
+t_8 = singleton t_mbb8 "h"
 
 
 u_1, u_2, u_3 :: [(MBB, String)]
@@ -220,6 +227,45 @@ test_lookupContainsRangeWithKey = do
     lookupContainsRangeWithKey t_mbb4 tu_2 @?= [(t_mbb4, "d")]
     lookupContainsRangeWithKey t_mbb5 tu_2 @?= [(t_mbb5, "e")]
     lookupContainsRangeWithKey t_mbb6 tu_2 `eqList` [(t_mbb6, "f"), (t_mbb1, "a")]
+
+
+test_lookupTouchesRange :: Assertion
+test_lookupTouchesRange = do
+    lookupTouchesRange t_mbb3 t_3 @?= ["c"]
+    lookupTouchesRange t_mbb1 tu_1 @?= ["a"]
+    lookupTouchesRange t_mbb2 tu_2 @?= ["b"]
+    lookupTouchesRange t_mbb3 tu_2 @?= ["c"]
+    lookupTouchesRange t_mbb4 tu_2 @?= ["d"]
+    lookupTouchesRange t_mbb5 tu_2 @?= ["e"]
+    lookupTouchesRange t_mbb6 tu_2 `eqList` ["f","a"]
+
+    lookupTouchesRange (MBB 1.0 1.0 7.0 3.0) tu_2 `eqList` ["e","c","a","b","d"]
+    lookupTouchesRange (MBB 0.0 0.0 1.0 1.0) tu_2 `eqList` ["f","a"]
+    lookupTouchesRange (MBB 0.0 0.0 7.0 4.0) tu_2 `eqList` ["e","c","f","a","b","d"]
+    lookupTouchesRange (MBB 0.5 0.5 0.5 0.5) tu_2 `eqList` ["a"]
+    lookupTouchesRange (MBB 0.0 1.0 0.0 1.0) tu_2 `eqList` ["a"]
+    lookupTouchesRange (MBB 1.0 0.0 1.0 0.0) tu_2 `eqList` ["a"]
+    lookupTouchesRange (MBB 1.0 1.0 1.0 1.0) tu_2 `eqList` ["a"]
+
+    lookupTouchesRange t_mbb2 tu_3 `eqList` ["b","h"]
+    lookupTouchesRange t_mbb3 tu_3 `eqList` ["c","g"]
+    lookupTouchesRange t_mbb4 tu_3 `eqList` ["d","h"]
+    lookupTouchesRange t_mbb5 tu_3 `eqList` ["e","g","h"]
+    lookupTouchesRange t_mbb6 tu_3 `eqList` ["f","a"]
+    lookupTouchesRange t_mbb7 tu_3 `eqList` ["c","e","g","h"]
+    lookupTouchesRange t_mbb8 tu_3 `eqList` ["h","b","g","d","e"]
+
+    lookupTouchesRange (MBB 4.5 2.5 4.5 2.5) tu_3 `eqList` ["g","h"]
+
+test_lookupTouchesRangeWithKey :: Assertion
+test_lookupTouchesRangeWithKey = do
+    lookupTouchesRangeWithKey t_mbb3 t_3 `eqList` [(t_mbb3, "c")]
+    lookupTouchesRangeWithKey t_mbb1 tu_1 `eqList` [(t_mbb1, "a")]
+    lookupTouchesRangeWithKey t_mbb2 tu_2 `eqList` [(t_mbb2, "b")]
+    lookupTouchesRangeWithKey t_mbb3 tu_2 `eqList` [(t_mbb3, "c")]
+    lookupTouchesRangeWithKey t_mbb4 tu_2 `eqList` [(t_mbb4, "d")]
+    lookupTouchesRangeWithKey t_mbb5 tu_2 `eqList` [(t_mbb5, "e")]
+    lookupTouchesRangeWithKey t_mbb6 tu_2 `eqList` [(t_mbb6, "f"), (t_mbb1, "a")]
 
 
 test_union :: Assertion
