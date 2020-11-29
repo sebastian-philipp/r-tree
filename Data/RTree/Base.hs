@@ -319,7 +319,7 @@ intersectWithKey mbb t@Leaf{}
 intersectWithKey mbb t = founds
     where matches = filter intersectRTree $ getChildren t
           founds = concatMap (intersectWithKey mbb) matches
-          intersectRTree x = isJust $ mbb `intersectMBB` (getMBB x)
+          intersectRTree x = mbb `touchesMBB` (getMBB x)
 
 -- | returns all values, which intersects with the given bounding box.
 intersect :: MBB -> RTree a -> [a]
