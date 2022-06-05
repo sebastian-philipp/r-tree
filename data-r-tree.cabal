@@ -33,7 +33,7 @@ common containers                   { build-depends: containers                 
 common deepseq                      { build-depends: deepseq                        >= 1.4        && < 1.5    }
 common ghc-heap-view                { build-depends: ghc-heap-view                  >= 0.5        && < 0.7    }
 common HUnit                        { build-depends: HUnit                          >= 1.6        && < 1.7    }
-common QuickCheck                   { build-depends: QuickCheck                     >= 2.13       && < 2.14   }
+common QuickCheck                   { build-depends: QuickCheck                     >= 2.13       && < 2.15   }
 common test-framework               { build-depends: test-framework                 >= 0.8        && < 0.9    }
 common test-framework-hunit         { build-depends: test-framework-hunit           >= 0.3        && < 0.4    }
 common test-framework-quickcheck2   { build-depends: test-framework-quickcheck2     >= 0.3        && < 0.4    }

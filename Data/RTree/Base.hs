@@ -83,11 +83,11 @@ import           Prelude         hiding (length, lookup, map, null)
 import           Data.RTree.MBB  hiding (mbb)
 
 data RTree a =
-      Node4 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a), getC4 :: ! (RTree a) }
-    | Node3 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a), getC3 :: ! (RTree a) }
-    | Node2 {getMBB :: {-# UNPACK #-} ! MBB, getC1 :: ! (RTree a), getC2 :: ! (RTree a) }
+      Node4 {getMBB :: {-# UNPACK #-} !MBB, getC1 :: !(RTree a), getC2 :: !(RTree a), getC3 :: !(RTree a), getC4 :: !(RTree a) }
+    | Node3 {getMBB :: {-# UNPACK #-} !MBB, getC1 :: !(RTree a), getC2 :: !(RTree a), getC3 :: !(RTree a) }
+    | Node2 {getMBB :: {-# UNPACK #-} !MBB, getC1 :: !(RTree a), getC2 :: !(RTree a) }
     | Node  {getMBB ::                  MBB, getChildren' :: [RTree a] }
-    | Leaf  {getMBB :: {-# UNPACK #-} ! MBB, getElem :: a}
+    | Leaf  {getMBB :: {-# UNPACK #-} !MBB, getElem :: a}
     | Empty
     deriving (Show, Eq, Typeable, Generic, Functor)
 
