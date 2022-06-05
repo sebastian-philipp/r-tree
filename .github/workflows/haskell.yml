@@ -7,7 +7,7 @@ jobs:
   build:
     strategy:
       matrix:
-        ghc-version: [8.4.4, 8.6.5, 8.8.2]
+        ghc-version: [8.4.4, 8.6.5, 8.8.2, 8.10.4, 9.0.1]
   
     runs-on: ubuntu-18.04
 

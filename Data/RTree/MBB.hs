@@ -34,7 +34,7 @@ import Data.Binary
 import GHC.Generics (Generic)
 
 -- | Minimal bounding box
-data MBB = MBB {getUlx :: {-# UNPACK #-} ! Double, getUly :: {-# UNPACK #-} ! Double, getBrx :: {-# UNPACK #-} ! Double, getBry :: {-# UNPACK #-} ! Double}
+data MBB = MBB {getUlx :: {-# UNPACK #-} !Double, getUly :: {-# UNPACK #-} !Double, getBrx :: {-# UNPACK #-} !Double, getBry :: {-# UNPACK #-} !Double}
     deriving (Eq, Generic, Ord)
 
 -- | created a minimal bounding box (or a rectangle)
