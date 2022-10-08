@@ -1,0 +1,61 @@
+version: 2.1
+
+jobs:
+  build:
+    machine:
+      image: ubuntu-2004:current
+    resource_class: medium
+    parameters:
+      version:
+        type: string
+    steps:
+      - checkout
+      - restore_cache:
+          name: Restore
+          key: linux-<< parameters.version >>-{{ checksum "data-r-tree.cabal" }}
+      - run:
+          name: Install GHC
+          command: |
+            sudo add-apt-repository ppa:hvr/ghc
+            sudo apt-get install ghc-<< parameters.version >> cabal-install-3.4
+            echo 'export PATH=/opt/ghc/bin:$PATH' >> $BASH_ENV
+
+      - run:
+          name: Update Dependencies
+          command: cabal new-update && cabal new-install --lib
+      - run:
+          name: Build
+          command: cabal new-build --enable-tests --enable-documentation
+      - save_cache:
+          name: Cache
+          key: linux-<< parameters.version >>-{{ checksum "data-r-tree.cabal" }}
+          paths:
+            - "/root/.cabal"
+            - "dist-newstyle"
+      - run:
+          name: Test
+          command: cabal new-test --enable-documentation --test-show-details=streaming
+
+
+
+workflows:
+  workflow:
+    jobs:
+      - build:
+          name: linux-8.2.2
+          version: 8.2.2
+      - build:
+          name: linux-8.4.4
+          version: 8.4.4
+      - build:
+          name: linux-8.6.5
+          version: 8.6.5
+      - build:
+          name: linux-8.8.4
+          version: 8.8.4
+      - build:
+          name: linux-8.10.4
+          version: 8.10.4
+      - build:
+          name: linux-9.0.1
+          version: 9.0.1
