@@ -1,18 +1,15 @@
 cabal-version: 2.2
 
 name:                   data-r-tree
-version:                0.6.0
-synopsis:               R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
-description:            R-Tree is a spatial data structure similar to Quadtrees or B-Trees.
-  
-  An R-Tree is a balanced tree and optimized for lookups. This implemetation useses an R-Tree to privide
-  a map to arbitrary values. 
+version:                1.0.0
+synopsis:               Two-dimensional R-Trees.
+description:            Two-dimensional spatial trees utilizing R-Tree and R*-Tree algorithms.
 
 license:                MIT
 license-file:           LICENSE
-author:                 Sebastian Wagner, Birte Wagner
-maintainer:             sebastian@spawnhost.de
-copyright:              Sebastian Wagner, Birte Wagner
+author:                 Sebastian Wagner, Birte Wagner, Oleksii Divak
+maintainer:             Oleksii Divak <frozenwitness@gmail.com>
+copyright:              Sebastian Wagner, Birte Wagner, Oleksii Divak
 category:               Data Structures
 build-type:             Simple
 
@@ -26,62 +23,120 @@ source-repository head
   type:                 git
   location:             https://github.com/sebastian-philipp/r-tree.git
 
-common base                         { build-depends: base                           >= 4          && < 5      }
 
-common binary                       { build-depends: binary                         >= 0.8        && < 0.11   }
-common containers                   { build-depends: containers                     >= 0.5        && < 0.7    }
-common deepseq                      { build-depends: deepseq                        >= 1.4        && < 1.5    }
-common ghc-heap-view                { build-depends: ghc-heap-view                  >= 0.5        && < 0.7    }
-common HUnit                        { build-depends: HUnit                          >= 1.6        && < 1.7    }
-common QuickCheck                   { build-depends: QuickCheck                     >= 2.13       && < 2.14   }
-common test-framework               { build-depends: test-framework                 >= 0.8        && < 0.9    }
-common test-framework-hunit         { build-depends: test-framework-hunit           >= 0.3        && < 0.4    }
-common test-framework-quickcheck2   { build-depends: test-framework-quickcheck2     >= 0.3        && < 0.4    }
-
-common config
-  default-language:     Haskell2010
-  ghc-options:          -Wall -fwarn-tabs
-
-common data-r-tree
-  build-depends:        data-r-tree
 
 library
-  import:               base, config
-                      , binary
-                      , deepseq
-  exposed-modules:      Data.RTree
-                        Data.RTree.MBB
-                        Data.RTree.Base
+  build-depends:        base      >= 4.7 && < 5
+                      , deepseq   >= 1.4 && < 1.5
+                      , primitive >= 0.6 && < 0.8
+
+  hs-source-dirs:       src
+
+  exposed-modules:      Data.RTree.MBR
+                        Data.RTree.Internal
+                        Data.RTree.Internal.Constants
+                        Data.RTree.Internal.Pretty
+                        Data.RTree.Lazy
                         Data.RTree.Strict
 
+  other-modules:        Data.Primitive.Array.Extra
+                        Data.RTree.Lazy.Internal
+                        Data.RTree.MBR.Internal
 
-test-suite properties
-  import:               base, config
-                      , binary
-                      , containers
-                      , data-r-tree
-                      , HUnit
-                      , QuickCheck
-                      , test-framework
-                      , test-framework-hunit
-                      , test-framework-quickcheck2
-  type:                 exitcode-stdio-1.0
-  main-is:              RTreeProperties.hs
-  other-extensions:     NoMonomorphismRestriction
-  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
-  hs-source-dirs:       test
+  ghc-options:          -Wall
 
-test-suite strict
-  import:               base, config
+  default-language:     Haskell2010
+
+executable visualize
+  build-depends:        base
+                      , bytestring
+                      , colour
                       , data-r-tree
                       , deepseq
-                      , ghc-heap-view
-                      , HUnit
-                      , QuickCheck
-                      , test-framework
-                      , test-framework-hunit
-                      , test-framework-quickcheck2
+                      , GLFW-b
+                      , gl
+                      , primitive
+                      , random
+                      , vector
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall -threaded
+
+  hs-source-dirs:       app/visualize
+
+  default-language:     Haskell2010
+
+benchmark time
+  build-depends:        base
+                      , data-r-tree
+                      , deepseq
+                      , gauge
+                      , primitive
+                      , random
+
   type:                 exitcode-stdio-1.0
-  main-is:              RTreeStrict.hs
-  ghc-options:  -Wall -fwarn-tabs -Wno-orphans
-  hs-source-dirs:       test
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall
+
+  hs-source-dirs:       benchmark/time
+                      , no
+
+  default-language:     Haskell2010
+
+benchmark space
+  build-depends:        base
+                      , data-r-tree
+                      , random
+                      , weigh
+
+  type:                 exitcode-stdio-1.0
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall
+
+  hs-source-dirs:       benchmark/space
+
+  default-language:     Haskell2010
+
+test-suite properties
+  build-depends:        base
+                      , data-r-tree
+                      , deepseq
+                      , hspec
+                      , primitive
+                      , random
+
+  type:                 exitcode-stdio-1.0
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall
+
+  hs-source-dirs:       test/properties
+                      , no
+
+  default-language:     Haskell2010
+
+test-suite strict
+  build-depends:        base
+                      , data-r-tree
+                      , deepseq
+                      , hspec
+                      , nothunks
+                      , primitive
+                      , random
+
+  type:                 exitcode-stdio-1.0
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall
+
+  hs-source-dirs:       test/strict
+                      , no
+
+  default-language:     Haskell2010
