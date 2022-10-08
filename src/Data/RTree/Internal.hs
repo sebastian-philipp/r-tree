@@ -1,4 +1,5 @@
-{-# LANGUAGE MagicHash
+{-# LANGUAGE CPP
+           , MagicHash
            , UnboxedTuples #-}
 
 {-# OPTIONS_HADDOCK not-home #-}
@@ -58,8 +59,10 @@ module Data.RTree.Internal
   , foldl
   , foldlWithKey
     -- ** Strict
+#if __GLASGOW_HASKELL__ >= 808
   , foldMap'
   , foldMapWithKey'
+#endif
   , foldr'
   , foldrWithKey'
   , foldl'
@@ -127,11 +130,11 @@ instance Fold.Foldable (RTree r) where
   foldMap f (Root  _ba a) = Fold.foldMap f a
   foldMap f (Leaf1 _ba a) = f a
   foldMap _ Empty         = mempty
-
+#if __GLASGOW_HASKELL__ >= 808
   foldMap' f (Root  _ba a) = Fold.foldMap' f a
   foldMap' f (Leaf1 _ba a) = f a
   foldMap' _ Empty         = mempty
-
+#endif
   foldr f z (Root  _ba a) = Fold.foldr f z a
   foldr f z (Leaf1 _ba a) = f a z
   foldr _ z Empty         = z
@@ -173,10 +176,10 @@ instance Functor (Node r) where
 instance Fold.Foldable (Node r) where
   foldMap f (Node n _brs as) = Array.foldMap (Fold.foldMap f) n as
   foldMap f (Leaf n _brs as) = Array.foldMap               f  n as
-
+#if __GLASGOW_HASKELL__ >= 808
   foldMap' f (Node n _brs as) = Array.foldMap' (Fold.foldMap' f) n as
   foldMap' f (Leaf n _brs as) = Array.foldMap'                f  n as
-
+#endif
   foldr f z (Node n _brs as) = Array.foldr (flip $ Fold.foldr f) z n as
   foldr f z (Leaf n _brs as) = Array.foldr                    f  z n as
 
@@ -406,6 +409,8 @@ foldMapWithKey pre f r =
 
       | otherwise            = mempty
 
+#if __GLASGOW_HASKELL__ >= 808
+
 {-# INLINEABLE foldMap' #-}
 -- | Version of 'foldMap' that is strict in the accumulator.
 foldMap'
@@ -441,7 +446,7 @@ foldMapWithKey' pre f r =
 
       | otherwise      = mempty
 
-
+#endif
 
 {-# INLINEABLE foldr #-}
 -- | Fold the tree right-to-left over values whose bounding rectangles match a 'Predicate'.

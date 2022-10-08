@@ -1,4 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP
+           , GeneralizedNewtypeDeriving #-}
 
 {- |
      Reference spatial tree implemented using a naive list of elements.
@@ -29,8 +30,9 @@ instance Functor (NoTree r) where
 
 instance Fold.Foldable (NoTree r) where
   foldMap  f = Fold.foldMap  (f . snd) . toList
+#if __GLASGOW_HASKELL__ >= 808
   foldMap' f = Fold.foldMap' (f . snd) . toList
-
+#endif
   foldr  f z = Fold.foldr  (f . snd) z . toList
   foldr' f z = Fold.foldr' (f . snd) z . toList
 
@@ -86,8 +88,8 @@ foldMapWithKey :: Monoid m => Predicate r -> (MBR r -> a -> m) -> NoTree r a -> 
 foldMapWithKey pre f = Fold.foldMap opt . toList
   where
     opt (ba, a) | onElement pre ba = f ba a
-                | otherwise         = mempty
-
+                | otherwise        = mempty
+#if __GLASGOW_HASKELL__ >= 808
 foldMap' :: Monoid m => Predicate r -> (a -> m) -> NoTree r a -> m
 foldMap' pre = foldMapWithKey' pre . const
 
@@ -95,8 +97,8 @@ foldMapWithKey' :: Monoid m => Predicate r -> (MBR r -> a -> m) -> NoTree r a ->
 foldMapWithKey' pre f = Fold.foldMap' opt . toList
   where
     opt (ba, a) | onElement pre ba = f ba a
-                | otherwise         = mempty
-
+                | otherwise        = mempty
+#endif
 
 
 foldr :: Predicate r -> (a -> b -> b) -> b -> NoTree r a -> b
@@ -115,7 +117,7 @@ foldrWithKey' :: Predicate r -> (MBR r -> a -> b -> b) -> b -> NoTree r a -> b
 foldrWithKey' pre f z = Fold.foldr' opt z . toList
   where
     opt (ba, a) acc | onElement pre ba = f ba a acc
-                    | otherwise         = acc
+                    | otherwise        = acc
 
 
 
@@ -126,7 +128,7 @@ foldlWithKey :: Predicate r -> (b -> MBR r -> a -> b) -> b -> NoTree r a -> b
 foldlWithKey pre f z = Fold.foldl opt z . toList
   where
     opt acc (ba, a) | onElement pre ba = f acc ba a
-                    | otherwise         = acc
+                    | otherwise        = acc
 
 foldl' :: Predicate r -> (b -> a -> b) -> b -> NoTree r a -> b
 foldl' pre = foldlWithKey' pre . (.) const
@@ -135,7 +137,7 @@ foldlWithKey' :: Predicate r -> (b -> MBR r -> a -> b) -> b -> NoTree r a -> b
 foldlWithKey' pre f z = Fold.foldl' opt z . toList
   where
     opt acc (ba, a) | onElement pre ba = f acc ba a
-                    | otherwise         = acc
+                    | otherwise        = acc
 
 
 

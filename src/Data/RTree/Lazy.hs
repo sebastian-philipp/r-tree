@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {- | 
      Module     : Data.RTree.Base
      Copyright  : Copyright (c) 2015, Birte Wagner, Sebastian Philipp
@@ -115,8 +117,10 @@ module Data.RTree.Lazy
   , R.foldl
   , R.foldlWithKey
     -- ** Strict
+#if __GLASGOW_HASKELL__ >= 808
   , R.foldMap'
   , R.foldMapWithKey'
+#endif
   , R.foldr'
   , R.foldrWithKey'
   , R.foldl'

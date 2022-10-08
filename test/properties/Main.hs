@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 module Main where
 
 import           Data.NoTree (NoTree)
@@ -225,10 +227,10 @@ soup zero n = do
   describe "Foldable" $ do
     it "foldMap" $ \(r, no, _g) ->
       foldMap pure r `shouldMatchList` foldMap pure no
-
+#if __GLASGOW_HASKELL__ >= 808
     it "foldMap'" $ \(r, no, _g) ->
       foldMap' pure r `shouldMatchList` foldMap' pure no
-
+#endif
     it "foldr" $ \(r, no, _g) ->
       foldr (:) [] r `shouldMatchList` foldr (:) [] no
 
@@ -266,7 +268,7 @@ soup zero n = do
             no' = foldr (No.insert ba) no as
         R.foldMapWithKey (pre ba) coordSumA r'
           `shouldMatchList` No.foldMapWithKey (pre ba) coordSumA no'
-
+#if __GLASGOW_HASKELL__ >= 808
   describe "foldMapWithKey'" $ do
     it "nonexistent" $ \(r, no, g) -> do
       replicateM_ 10 $ do
@@ -292,7 +294,7 @@ soup zero n = do
             no' = foldr (No.insert ba) no as
         R.foldMapWithKey' (pre ba) coordSumA r'
           `shouldMatchList` No.foldMapWithKey' (pre ba) coordSumA no'
-
+#endif
   describe "foldrWithKey" $ do
     it "nonexistent" $ \(r, no, g) -> do
       replicateM_ 10 $ do

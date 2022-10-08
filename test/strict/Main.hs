@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main where
@@ -101,7 +103,7 @@ main =
       let r = R.bulkSTR $ zip brs [0 :: Int ..]
       s <- wNoThunks [] r
       s `shouldSatisfy` isNothing
-
+#if __GLASGOW_HASKELL__ >= 808
     it "foldMapWithKey'" $ do
       g <- newIOGenM $ mkStdGen 0
       brs <- replicateM 1024 $ randMBR g
@@ -110,7 +112,7 @@ main =
       s <- wNoThunks [] $
              getFirst $ R.foldMap' (R.intersects $ MBR 256 256 768 768) (First . Just) r
       s `shouldSatisfy` isNothing
-
+#endif
     it "foldrWithKey'" $ do
       g <- newIOGenM $ mkStdGen 0
       brs <- replicateM 1024 $ randMBR g

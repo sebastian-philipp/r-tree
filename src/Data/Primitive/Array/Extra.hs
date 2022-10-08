@@ -1,4 +1,5 @@
-{-# LANGUAGE MagicHash
+{-# LANGUAGE CPP
+           , MagicHash
            , Rank2Types
            , UnboxedTuples #-}
 
@@ -32,13 +33,13 @@ ifoldMap :: Monoid m => (Int -> a -> m) -> Int -> Array a -> m
 ifoldMap f n as = flip Fold.foldMap [0 .. n - 1] $ \i ->
                          let (# a #) = indexArray## as i
                          in f i a
-
+#if __GLASGOW_HASKELL__ >= 808
 {-# INLINEABLE foldMap' #-}
 foldMap' :: Monoid m => (a -> m) -> Int -> Array a -> m
 foldMap' f n as = flip Fold.foldMap' [0 .. n - 1] $ \i ->
                          let (# a #) = indexArray## as i
                          in f $! a
-
+#endif
 {-# INLINEABLE foldr #-}
 foldr :: (a -> b -> b) -> b -> Int -> Array a -> b
 foldr f z n as = let go i acc = let (# a #) = indexArray## as i
@@ -114,14 +115,14 @@ izipMap f n as bs = flip Fold.foldMap [0 .. n - 1] $ \i ->
                            let (# a #) = indexArray## as i
                                (# b #) = indexArray## bs i
                            in f i a b
-
+#if __GLASGOW_HASKELL__ >= 808
 {-# INLINEABLE zipMap' #-}
 zipMap' :: Monoid m => (a -> b -> m) -> Int -> Array a -> Array b -> m
 zipMap' f n as bs = flip Fold.foldMap' [0 .. n - 1] $ \i ->
                            let (# a #) = indexArray## as i
                                (# b #) = indexArray## bs i
                            in a `seq` b `seq` f a b
-
+#endif
 {-# INLINEABLE zipr #-}
 zipr :: (a -> b -> c -> c) -> c -> Int -> Array a -> Array b -> c
 zipr f z n as bs = let go i acc = let (# a #) = indexArray## as i

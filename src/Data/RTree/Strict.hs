@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE BangPatterns
+           , CPP #-}
 
 {- | 
      Module     : Data.RTree.Base
@@ -61,8 +62,10 @@ module Data.RTree.Strict
   , R.foldl
   , R.foldlWithKey
     -- ** Strict
+#if __GLASGOW_HASKELL__ >= 808
   , R.foldMap'
   , R.foldMapWithKey'
+#endif
   , R.foldr'
   , R.foldrWithKey'
   , R.foldl'
