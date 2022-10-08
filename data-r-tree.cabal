@@ -30,9 +30,9 @@ flag visualizer
   Default: False
 
 library
-  build-depends:        base      >= 4.7 && < 5
-                      , deepseq   >= 1.4 && < 1.5
-                      , primitive >= 0.6 && < 0.8
+  build-depends:        base      >= 4.12 && < 5
+                      , deepseq   >= 1.4  && < 1.5
+                      , primitive >= 0.6  && < 0.8
 
   hs-source-dirs:       src
 

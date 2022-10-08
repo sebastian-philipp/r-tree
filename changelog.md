@@ -5,7 +5,7 @@ Additions are not listed, only the most important changes are.
 
 * Cabal file changes:
 
-  - Bumped lower bound of `base` to `4.7`;
+  - Bumped lower boundary of `base` to `4.12`;
 
   - No longer depends on `binary`;
 

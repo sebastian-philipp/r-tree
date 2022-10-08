@@ -42,12 +42,6 @@ workflows:
   workflow:
     jobs:
       - build:
-          name: linux-8.2.2
-          version: 8.2.2
-      - build:
-          name: linux-8.4.4
-          version: 8.4.4
-      - build:
           name: linux-8.6.5
           version: 8.6.5
       - build:
