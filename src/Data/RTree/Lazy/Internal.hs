@@ -18,7 +18,8 @@ import           Data.Primitive.Types
 
 
 
--- | \(O (\log_M n)\). Same as 'insert', using Guttman's original insert algorithm.
+-- | \(O (\log_M n)\). Same as 'Data.Map.Lazy.insert',
+--   using Guttman's original insertion algorithm.
 insertGut :: (Num r, Ord r, Prim r) => MBR r -> a -> RTree r a -> RTree r a
 insertGut bz z t =
   case t of

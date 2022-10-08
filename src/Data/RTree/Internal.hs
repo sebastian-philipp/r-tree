@@ -292,7 +292,7 @@ intersects :: (Ord r, Prim r) => MBR r -> Predicate r
 intersects = Predicate <$> MBR.intersects <*> MBR.intersects
 
 {-# INLINE intersects' #-}
--- | Same as 'intersects', but the checks are strict
+-- | Same as 'Data.RTree.Internal.intersects', but the checks are strict
 --   (rectangles that only intersect on a side or a point are excluded).
 intersects' :: (Ord r, Prim r) => MBR r -> Predicate r
 intersects' = Predicate <$> MBR.intersects' <*> MBR.intersects'
@@ -303,7 +303,7 @@ contains :: (Ord r, Prim r) => MBR r -> Predicate r
 contains = Predicate <$> MBR.contains <*> MBR.contains
 
 {-# INLINE contains' #-}
--- | Same as 'contains', but the checks are strict
+-- | Same as 'Data.RTree.Internal.contains', but the checks are strict
 --   (rectangles that touch any sides of the given one are excluded).
 contains' :: (Ord r, Prim r) => MBR r -> Predicate r
 contains' = Predicate <$> MBR.contains' <*> MBR.contains'
@@ -314,7 +314,7 @@ within :: (Ord r, Prim r) => MBR r -> Predicate r
 within = Predicate <$> MBR.intersects <*> flip MBR.contains
 
 {-# INLINE within' #-}
--- | Same as 'within', but the checks are strict
+-- | Same as 'Data.RTree.Internal.within', but the checks are strict
 --   (rectangles that touch any sides of the given one are excluded).
 within' :: (Ord r, Prim r) => MBR r -> Predicate r
 within' = Predicate <$> MBR.intersects <*> flip MBR.contains'
@@ -332,7 +332,7 @@ map
 map pre = mapWithKey pre . const
 
 {-# INLINEABLE mapWithKey #-}
--- | Version of 'map' that includes the bounding rectangle.
+-- | Version of 'Data.RTree.Internal.map' that includes the bounding rectangle.
 mapWithKey
   :: (Ord r, Prim r)
   => Predicate r
@@ -385,7 +385,8 @@ foldMap
 foldMap pre = foldMapWithKey pre . const
 
 {-# INLINEABLE foldMapWithKey #-}
--- | Version of 'foldMap' that includes the bounding rectangle in the operator.
+-- | Version of 'Data.RTree.Internal.foldMap' that
+--   includes the bounding rectangle in the operator.
 foldMapWithKey
   :: (Monoid m, Ord r, Prim r)
   => Predicate r
@@ -412,7 +413,7 @@ foldMapWithKey pre f r =
 #if __GLASGOW_HASKELL__ >= 808
 
 {-# INLINEABLE foldMap' #-}
--- | Version of 'foldMap' that is strict in the accumulator.
+-- | Version of 'Data.RTree.Internal.foldMap' that is strict in the accumulator.
 foldMap'
   :: (Monoid m, Ord r, Prim r)
   => Predicate r
@@ -460,7 +461,8 @@ foldr
 foldr pre = foldrWithKey pre . const
 
 {-# INLINEABLE foldrWithKey #-}
--- | Version of 'foldr' that includes the bounding rectangle in the operator.
+-- | Version of 'Data.RTree.Internal.foldr' that
+--   includes the bounding rectangle in the operator.
 foldrWithKey
   :: (Ord r, Prim r)
   => Predicate r
@@ -487,7 +489,8 @@ foldrWithKey pre f z r =
 
 
 {-# INLINEABLE foldr' #-}
--- | Version of 'foldr' that is strict in the application of the operator.
+-- | Version of 'Data.RTree.Internal.foldr' that is
+--   strict in the application of the operator.
 foldr'
   :: (Ord r, Prim r)
   => Predicate r
@@ -536,7 +539,8 @@ foldl
 foldl pre = foldlWithKey pre . (.) const
 
 {-# INLINEABLE foldlWithKey #-}
--- | Version of 'foldl' that includes the bounding rectangle in the operator.
+-- | Version of 'Data.RTree.Internal.foldl' that
+--   includes the bounding rectangle in the operator.
 foldlWithKey
   :: (Ord r, Prim r)
   => Predicate r
@@ -563,7 +567,8 @@ foldlWithKey pre f z r =
 
 
 {-# INLINEABLE foldl' #-}
--- | Version of 'foldl' that is strict in the application of the operator.
+-- | Version of 'Data.RTree.Internal.foldl' that is
+--   strict in the application of the operator.
 foldl'
   :: (Ord r, Prim r)
   => Predicate r
@@ -612,7 +617,8 @@ traverse
 traverse pre = traverseWithKey pre . const
 
 {-# INLINEABLE traverseWithKey #-}
--- | Version of 'traverse' that includes the bounding rectangle in the operator.
+-- | Version of 'Data.RTree.Internal.traverse' that
+--   includes the bounding rectangle in the operator.
 traverseWithKey
   :: (Applicative f, Ord r, Prim r)
   => Predicate r

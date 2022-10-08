@@ -231,7 +231,7 @@ bulkSTR xs
 
 -- | Traverses the list left-to-right and 'insert's elements one by one.
 --
---   This is not a performant function, it's merely a 'foldl'' over 'insert'.
+--   This is not a performant function, it's merely a 'R.foldl'' over 'insert'.
 --
 --   If you're only intending to use the resulting tree for lookups, consider 'bulkSTR' instead.
 fromList :: (Num r, Ord r, Prim r) => [(MBR r, a)] -> RTree r a
