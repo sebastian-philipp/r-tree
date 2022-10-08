@@ -1,4 +1,5 @@
 {-# LANGUAGE PatternSynonyms
+           , RoleAnnotations
            , ViewPatterns
            , UnboxedSums #-}
 
@@ -13,6 +14,7 @@ import           Data.Primitive.Types
 
 
 
+type role MBR nominal
 -- | Two-dimensional minimum bounding rectangle.
 --
 --   This datatype is unboxed, so evaluating it to weak head normal form
