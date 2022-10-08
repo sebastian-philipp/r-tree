@@ -25,6 +25,10 @@ source-repository head
 
 
 
+flag visualizer
+  Description: Whether the visualize executable should be built.
+  Default: False
+
 library
   build-depends:        base      >= 4.7 && < 5
                       , deepseq   >= 1.4 && < 1.5
@@ -66,6 +70,11 @@ executable visualize
   hs-source-dirs:       app/visualize
 
   default-language:     Haskell2010
+
+  if flag (visualizer)
+    Buildable: True
+  else
+    Buildable: False
 
 benchmark time
   build-depends:        base
