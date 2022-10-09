@@ -1,18 +1,15 @@
-{-# LANGUAGE CPP #-}
-
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Main where
 
 import           Data.RTree.Internal (RTree (..), Node (..))
-import           Data.RTree.MBR
+import           Data.RTree.Strict (MBR (..))
 import qualified Data.RTree.Strict as R
 
 import           Control.Monad
 import           Data.Foldable
+import           Data.List.NonEmpty as NonEmpty
 import           Data.Maybe
-import           Data.Monoid
-import           Data.Primitive.Array
 import           NoThunks.Class
 import           System.Random.Stateful
 import           Test.Hspec
@@ -29,34 +26,38 @@ randMBR g = do
 
 instance NoThunks a => NoThunks (RTree r a) where
   wNoThunks ctx r =
-    let ctx' = "RTree" : ctx
-    in case r of
-         Root _ba a  -> wNoThunks ctx' $! a
-         Leaf1 _ba a -> wNoThunks ctx' a
-         Empty       -> return Nothing
+    case r of
+      Root _ba a  -> wNoThunks ("RTree" : ctx) a
+      Leaf1 _ba a -> wNoThunks ("Leaf1" : ctx) a
+      Empty       -> return Nothing
 
   showTypeOf _ = "RTree"
 
 instance NoThunks a => NoThunks (Node r a) where
   wNoThunks ctx x =
     case x of
-      Node n _brs as ->
-        let name i = "Leaf[" <> show i <> "]"
+      Node as ->
+        let name i = ("Node[" <> show (i :: Int) <> "]") : ctx
 
-            f i = do a <- indexArrayM as i
-                     wNoThunks (name i : ctx) $! a
+            f (ba, a, i) = [wNoThunks (name i) ba, wNoThunks (name i) a]
 
-        in allNoThunks $ f <$> [0 .. n - 1]
+        in allNoThunks . foldMap f $
+                           NonEmpty.zipWith (\(ba, a) i -> (ba, a, i)) as (0 :| [1..])
 
-      Leaf n _brs as ->
-        let name i = "Leaf[" <> show i <> "]"
+      Leaf as ->
+        let name i = ("Leaf[" <> show (i :: Int) <> "]") : ctx
+            
+            f (ba, a, i) = [wNoThunks (name i) ba, wNoThunks (name i) a]
 
-            f i = do a <- indexArrayM as i
-                     wNoThunks (name i : ctx) a
-
-        in allNoThunks $ f <$> [0 .. n - 1]
+        in allNoThunks . foldMap f $
+                           NonEmpty.zipWith (\(ba, a) i -> (ba, a, i)) as (0 :| [1..])
 
   showTypeOf _ = "Node"
+
+instance NoThunks (MBR r) where
+  wNoThunks _ _ = return Nothing
+
+  showTypeOf _ = "MBR"
 
 
 
@@ -77,7 +78,7 @@ main =
             s `shouldSatisfy` isNothing
             return r'
 
-      void . foldlM f R.empty $ zip brs [0 :: Int ..]
+      void . foldlM f R.empty $ Prelude.zip brs [0 :: Int ..]
 
     it "insertGut" $ do
       g <- newIOGenM $ mkStdGen 0
@@ -88,45 +89,11 @@ main =
             s `shouldSatisfy` isNothing
             return r'
 
-      void . foldlM f R.empty $ zip brs [0 :: Int ..]
-
-    it "fromList" $ do
-      g <- newIOGenM $ mkStdGen 0
-      brs <- replicateM 1024 $ randMBR g
-      let r = R.fromList $ zip brs [0 :: Int ..]
-      s <- wNoThunks [] r
-      s `shouldSatisfy` isNothing
+      void . foldlM f R.empty $ Prelude.zip brs [0 :: Int ..]
 
     it "bulkSTR" $ do
       g <- newIOGenM $ mkStdGen 0
       brs <- replicateM 1024 $ randMBR g
-      let r = R.bulkSTR $ zip brs [0 :: Int ..]
+      let r = R.bulkSTR $ Prelude.zip brs [0 :: Int ..]
       s <- wNoThunks [] r
-      s `shouldSatisfy` isNothing
-#if __GLASGOW_HASKELL__ >= 808
-    it "foldMapWithKey'" $ do
-      g <- newIOGenM $ mkStdGen 0
-      brs <- replicateM 1024 $ randMBR g
-      let r = R.fromList $ zip brs [0 :: Int ..]
-
-      s <- wNoThunks [] $
-             getFirst $ R.foldMap' (R.intersects $ MBR 256 256 768 768) (First . Just) r
-      s `shouldSatisfy` isNothing
-#endif
-    it "foldrWithKey'" $ do
-      g <- newIOGenM $ mkStdGen 0
-      brs <- replicateM 1024 $ randMBR g
-      let r = R.fromList $ zip brs [0 :: Int ..]
-
-      s <- wNoThunks [] $
-             R.foldr' (R.intersects $ MBR 256 256 768 768) (:) [] r
-      s `shouldSatisfy` isNothing
-
-    it "foldlWithKey'" $ do
-      g <- newIOGenM $ mkStdGen 0
-      brs <- replicateM 1024 $ randMBR g
-      let r = R.fromList $ zip brs [0 :: Int ..]
-
-      s <- wNoThunks [] $
-             R.foldl' (R.intersects $ MBR 256 256 768 768) (flip (:)) [] r
       s `shouldSatisfy` isNothing

@@ -5,7 +5,7 @@ module Main where
 import           Data.NoTree (NoTree)
 import qualified Data.NoTree as No
 import           Data.RTree.MBR as MBR
-import           Data.RTree.Lazy (RTree, Prim)
+import           Data.RTree.Lazy (RTree)
 import qualified Data.RTree.Lazy as R
 
 import           Control.Monad
@@ -91,7 +91,7 @@ traversal cat from name pre =
              traverse $ \x -> fmap (:[]) $ R.traverse (pre x) (pure @IO . (+) 1) r
 
 
-fromListGut :: (Foldable t, Num r, Ord r, Prim r) => t (MBR r, b) -> RTree r b
+fromListGut :: (Foldable t, Num r, Ord r) => t (MBR r, b) -> RTree r b
 fromListGut = foldl' (flip $ uncurry R.insertGut) R.empty
 
 

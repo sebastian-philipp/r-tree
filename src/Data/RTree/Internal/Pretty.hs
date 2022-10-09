@@ -3,15 +3,15 @@ module Data.RTree.Internal.Pretty where
 import           Data.RTree.Internal as R
 
 import           Data.Foldable as Fold
-import           Data.Primitive.Types
+import           Data.List.NonEmpty as NonEmpty
 
 
 
 -- | Pretty-print the tree into @stdout@.
-pretty :: (Prim r, Show r, Show a) => RTree r a -> IO ()
+pretty :: (Show r, Show a) => RTree r a -> IO ()
 pretty = Fold.traverse_ (putStrLn . indent) . root
 
-pretty' :: (Prim r, Show r, Show a) => RTree r a -> String
+pretty' :: (Show r, Show a) => RTree r a -> String
 pretty' = Fold.foldMap indent . root
 
 indent :: Line -> String
@@ -24,23 +24,23 @@ data Line = Line
 plus :: Line -> Line
 plus (Line i s) = Line ((+1) . i) s
 
-root :: (Prim r, Show r, Show a) => RTree r a -> [Line]
+root :: (Show r, Show a) => RTree r a -> [Line]
 root r =
   case r of
     Root bs s  -> node bs s
     Leaf1 bb a -> pure . Line id $ "Leaf1 " <> mbr bb <> " " <> show a
     Empty      -> pure $ Line id "Empty"
 
-node :: (Prim r, Show r, Show a) => MBR r -> Node r a -> [Line]
+node :: (Show r, Show a) => MBR r -> Node r a -> [Line]
 node bs s =
   case s of
-    Node n brs as ->
-      (:) (Line id $ "Node" <> show n <> " " <> mbr bs) $
-        plus <$> Fold.foldMap (uncurry node) (nodes n brs as)
-    Leaf n brs as ->
-      (:) (Line id $ "Leaf" <> show n <> " " <> mbr bs) $
-        plus . (\(br, a) -> Line id $ mbr br <> " " <> show a) <$> nodes n brs as
+    Node as ->
+      (:) (Line id $ "Node" <> show (NonEmpty.length as) <> " " <> mbr bs) $
+        plus <$> Fold.foldMap (uncurry node) as
+    Leaf as ->
+      (:) (Line id $ "Leaf" <> show (NonEmpty.length as) <> " " <> mbr bs) $
+        plus . (\(br, a) -> Line id $ mbr br <> " " <> show a) <$> NonEmpty.toList as
 
-mbr :: (Prim r, Show r) => MBR r -> String
+mbr :: Show r => MBR r -> String
 mbr (MBR xmin ymin xmax ymax) = mconcat [ "(", show xmin, ",", show ymin
                                         , ",", show xmax, ",", show ymax, ")" ]

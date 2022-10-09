@@ -361,9 +361,9 @@ colors = cycle [lightgreen, yellow, violet, cyan, red, magenta]
 visualize :: RTree Int a -> [Point]
 visualize (Root ba a)  = visual 1 a <> mbr ba (colors !! 0)
   where
-    visual i (Node _ brs as) = foldMap (visual $ i + 1) as
-                                 <> foldMap (flip mbr $ colors !! i) brs
-    visual _ (Leaf _ brs _ ) = foldMap (flip mbr white) brs
+    visual i (Node as) = foldMap (visual $ i + 1) (snd <$> as)
+                                 <> foldMap (flip mbr $ colors !! i) (fst <$> as)
+    visual _ (Leaf as) = foldMap (flip mbr white) (fst <$> as)
 
 visualize (Leaf1 ba _) = mbr ba (colors !! 0)
 visualize Empty        = []

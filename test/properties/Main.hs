@@ -5,10 +5,9 @@ module Main where
 import           Data.NoTree (NoTree)
 import qualified Data.NoTree as No
 import           Data.RTree.Internal (equideep)
-import           Data.RTree.Lazy (Predicate, RTree, Prim)
+import           Data.RTree.Lazy (MBR (..), Predicate, RTree)
 import qualified Data.RTree.Lazy as R
 import qualified Data.RTree.Strict as RS
-import           Data.RTree.MBR
 
 import           Control.DeepSeq
 import           Control.Exception
@@ -39,7 +38,7 @@ excluding crit no f = do
     Nothing -> return ba
     Just _  -> excluding crit no f
 
-uniqueIndex :: (Monad m, Ord r, Prim r) => NoTree r a -> m Int -> m Int
+uniqueIndex :: (Monad m, Ord r) => NoTree r a -> m Int -> m Int
 uniqueIndex no f = do
   i <- f
   if No.foldMap (R.equals . fst $ No.toList no !! i) (const $ Sum 1) no < Sum (2 :: Int)
@@ -48,7 +47,7 @@ uniqueIndex no f = do
 
 
 
-anyPredicate :: (Ord r, Prim r, StatefulGen g m) => g -> m (MBR r -> Predicate r)
+anyPredicate :: (Ord r, StatefulGen g m) => g -> m (MBR r -> Predicate r)
 anyPredicate g = do
   let lst = [ R.equals, R.intersects, R.intersects'
             , R.contains, R.contains', R.within, R.within' ]
@@ -154,45 +153,24 @@ soup zero n = do
             `shouldMatchList` No.toList (foldr (No.insert ba) no as)
 
   describe "delete" $ do
-    describe "lazy" $ do
-      it "nonexistent" $ \(r, no, g) ->
-        replicateM_ 10 $ do
-          ba <- excluding R.equals no $ randMBR (n - 1) g
-          R.toList (R.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
+    it "nonexistent" $ \(r, no, g) ->
+      replicateM_ 10 $ do
+        ba <- excluding R.equals no $ randMBR (n - 1) g
+        R.toList (R.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
   
-      it "existing" $ \(r, no, g) -> do
-        when zero $ pendingWith "Nonapplicable"
-        replicateM_ 10 $ do
-          i <- uniqueIndex no $ uniformRM (0, n - 1) g
-          let ba = fst $ No.toList no !! i
-          R.toList (R.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
+    it "existing" $ \(r, no, g) -> do
+      when zero $ pendingWith "Nonapplicable"
+      replicateM_ 10 $ do
+        i <- uniqueIndex no $ uniformRM (0, n - 1) g
+        let ba = fst $ No.toList no !! i
+        R.toList (R.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
   
-      it "10 copies" $ \(r, no, g) ->
-        replicateM_ 10 $ do
-          ba <- excluding R.equals no $ randMBR (n - 1) g
-          as <- replicate 10 <$> uniformRM (0, n - 1) g
-          R.toList (R.delete ba $ foldr (R.insert ba) r as)
-            `shouldMatchList` No.toList (No.delete ba $ foldr (No.insert ba) no as)
-
-    describe "strict" $ do
-      it "nonexistent" $ \(r, no, g) ->
-        replicateM_ 10 $ do
-          ba <- excluding R.equals no $ randMBR (n - 1) g
-          R.toList (RS.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
-  
-      it "existing" $ \(r, no, g) -> do
-        when zero $ pendingWith "Nonapplicable"
-        replicateM_ 10 $ do
-          i <- uniqueIndex no $ uniformRM (0, n - 1) g
-          let ba = fst $ No.toList no !! i
-          R.toList (RS.delete ba r) `shouldMatchList` No.toList (No.delete ba no)
-  
-      it "10 copies" $ \(r, no, g) ->
-        replicateM_ 10 $ do
-          ba <- excluding R.equals no $ randMBR (n - 1) g
-          as <- replicate 10 <$> uniformRM (0, n - 1) g
-          R.toList (RS.delete ba $ foldr (R.insert ba) r as)
-            `shouldMatchList` No.toList (No.delete ba $ foldr (No.insert ba) no as)
+    it "10 copies" $ \(r, no, g) ->
+      replicateM_ 10 $ do
+        ba <- excluding R.equals no $ randMBR (n - 1) g
+        as <- replicate 10 <$> uniformRM (0, n - 1) g
+        R.toList (R.delete ba $ foldr (R.insert ba) r as)
+          `shouldMatchList` No.toList (No.delete ba $ foldr (No.insert ba) no as)
 
   describe "Functor" $ do
     it "fmap" $ \(r, no, _g) ->

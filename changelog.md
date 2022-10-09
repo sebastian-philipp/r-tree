@@ -15,9 +15,7 @@ Additions are not listed, only the most important changes are.
 
   - Now called `MBR` and resides within `Data.RTree.MBR`;
 
-  - Now has a single type argument, the coordinate type, further referred to as `r`.
-    Any type that is an instance of `Prim` from the `primitive` package
-    is a valid coordinate type.
+  - Now has a single type argument, the coordinate type, further referred to as `r`;
 
   - No longer has `Binary`, `Ord` and `Generic` instances;
 

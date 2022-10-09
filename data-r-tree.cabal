@@ -32,7 +32,6 @@ flag visualizer
 library
   build-depends:        base      >= 4.12 && < 5
                       , deepseq   >= 1.4  && < 1.5
-                      , primitive >= 0.6  && < 0.8
 
   hs-source-dirs:       src
 
@@ -43,9 +42,7 @@ library
                         Data.RTree.Lazy
                         Data.RTree.Strict
 
-  other-modules:        Data.Primitive.Array.Extra
-                        Data.RTree.Lazy.Internal
-                        Data.RTree.MBR.Internal
+  other-modules:        Data.RTree.Lazy.Internal
 
   ghc-options:          -Wall
 
@@ -59,7 +56,6 @@ executable visualize
                       , deepseq
                       , GLFW-b
                       , gl
-                      , primitive
                       , random
                       , vector
 
@@ -81,7 +77,6 @@ benchmark time
                       , data-r-tree
                       , deepseq
                       , gauge
-                      , primitive
                       , random
 
   type:                 exitcode-stdio-1.0
@@ -116,7 +111,6 @@ test-suite properties
                       , data-r-tree
                       , deepseq
                       , hspec
-                      , primitive
                       , random
 
   type:                 exitcode-stdio-1.0
@@ -136,7 +130,6 @@ test-suite strict
                       , deepseq
                       , hspec
                       , nothunks
-                      , primitive
                       , random
 
   type:                 exitcode-stdio-1.0

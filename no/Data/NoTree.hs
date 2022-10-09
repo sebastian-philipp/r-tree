@@ -9,7 +9,6 @@
 
 module Data.NoTree where
 
-import           Data.Primitive.Types
 import           Data.RTree.Internal (Predicate (..), onElement, MBR (..))
 
 import           Control.DeepSeq
@@ -22,7 +21,7 @@ import           Prelude hiding (Foldable (..))
 newtype NoTree r a = NoTree { toList :: [(MBR r, a)] }
                      deriving NFData
 
-instance (Prim r, Show r, Show a) => Show (NoTree r a) where
+instance (Show r, Show a) => Show (NoTree r a) where
   show = showString "fromList " . flip showList "" . toList
 
 instance Functor (NoTree r) where
@@ -60,10 +59,10 @@ length = List.length . toList
 
 
 
-insert :: (Eq r, Prim r) => MBR r -> a -> NoTree r a -> NoTree r a
+insert :: Eq r => MBR r -> a -> NoTree r a -> NoTree r a
 insert ba a = NoTree . (:) (ba, a) . toList
 
-delete :: (Eq r, Prim r) => MBR r -> NoTree r a -> NoTree r a
+delete :: Eq r => MBR r -> NoTree r a -> NoTree r a
 delete ba no = let (xs, ys) = span ((/= ba) . fst) $ toList no
                in NoTree $ xs <> drop 1 ys
 

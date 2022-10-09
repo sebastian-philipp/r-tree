@@ -3,38 +3,36 @@ module Data.RTree.Lazy.Internal
   , delete
   ) where
 
-import qualified Data.Primitive.Array.Extra as Array
 import           Data.RTree.Internal as R
 import           Data.RTree.Internal.Constants
 import qualified Data.RTree.MBR as MBR
 
-import           Control.Monad
 import           Data.Foldable as Fold
-import           Data.Monoid
+import           Data.List.NonEmpty (NonEmpty (..), (<|))
+import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Ord
+import           Data.Monoid
 import           Prelude hiding (Foldable (..))
-import           Data.Primitive.Array
-import           Data.Primitive.Types
 
 
 
 -- | \(O (\log_M n)\). Same as 'Data.Map.Lazy.insert',
 --   using Guttman's original insertion algorithm.
-insertGut :: (Num r, Ord r, Prim r) => MBR r -> a -> RTree r a -> RTree r a
+insertGut :: (Num r, Ord r) => MBR r -> a -> RTree r a -> RTree r a
 insertGut bz z t =
   case t of
     Root _ x   ->
       case insertGutNode bz z x of
         Right (ba, a)       -> Root ba a
-        Left (bl, l, br, r) -> Root (MBR.union bl br) $ mk Node [(bl, l), (br, r)]
+        Left (bl, l, br, r) -> Root (MBR.union bl br) . Node $ (bl, l) :| [(br, r)]
 
-    Leaf1 ba a -> Root (MBR.union ba bz) $ mk Leaf [(ba, a), (bz, z)]
+    Leaf1 ba a -> Root (MBR.union ba bz) . Leaf $ (ba, a) :| [(bz, z)]
     Empty      -> Leaf1 bz z
 
 
 
 insertGutNode
-  :: (Num r, Ord r, Prim r)
+  :: (Num r, Ord r)
   => MBR r
   -> a
   -> Node r a
@@ -43,29 +41,30 @@ insertGutNode bz z x =
   let withR a      = Right (union a, a)
       withL (l, r) = Left (union l, l, union r, r)
   in case x of
-       Node n brs as ->
-         let i = leastEnlargement bz n brs
-         in case insertGutNode bz z $ indexArray as i of
-              Right (ba, a)   -> withR $ replace Node n brs as i ba a
-
+       Node as ->
+         let (i, least) = leastEnlargement bz as
+         in case insertGutNode bz z least of
+              Right (ba, a)   -> withR . Node . NonEmpty.fromList $ swap i (ba, a) as
               Left (bl, l, br, r)
-                | n < bigM  -> withR $ replaceSnoc Node n brs as i bl l br r
-                | otherwise -> withL . split Node quad $ (bl, l) : (br, r) : discard i (nodes n brs as)
+                | NonEmpty.length as < bigM  -> withR . Node $ (br, r) :| swap i (bl, l) as
+                | otherwise                  ->
+                    withL . split Node quad $ (bl, l) :| ((br, r) : discard i as)
 
-       Leaf n brs as
-         | n < bigM  -> withR $ snoc Leaf n brs as bz z
-         | otherwise -> withL . split Leaf quad $ (bz, z) : nodes n brs as
+       Leaf as
+         | NonEmpty.length as < bigM -> withR . Leaf $ (bz, z) <| as
+         | otherwise                 -> withL . split Leaf quad $ (bz, z) <| as
 
 
 
-
-insertDepth :: (Num r, Ord r, Prim r) => Int -> MBR r -> Node r a -> RTree r a -> (Bool, RTree r a)
+insertDepth
+  :: (Num r, Ord r) => Int -> MBR r -> Node r a -> RTree r a -> (Bool, RTree r a)
 insertDepth d bz z t =
   case t of
     Root _ x  ->
       case insertDepthNode d bz z x of
         Right (ba, a)       -> (,) False $ Root ba a
-        Left (bl, l, br, r) -> (,) True  . Root (MBR.union bl br) $ mk Node [(bl, l), (br, r)]
+        Left (bl, l, br, r) ->
+          (,) True  . Root (MBR.union bl br) . Node $ (bl, l) :| [(br, r)]
 
     Empty     -> (,) False $ Root bz z
     Leaf1 _ _ -> errorWithoutStackTrace "Data.RTree.Lazy.insertDepth: leaf on root level"
@@ -73,41 +72,44 @@ insertDepth d bz z t =
 
 
 insertDepthNode
-  :: (Num r, Ord r, Prim r)
+  :: (Num r, Ord r)
   => Int -> MBR r -> Node r a -> Node r a -> Either (MBR r, Node r a, MBR r, Node r a) (MBR r, Node r a)
 insertDepthNode d bz z x =
   let withR a = Right (union a, a)
       withL (l, r) = Left (union l, l, union r, r)
   in case x of
-       Node n brs as
+       Node as
          | d <= 0    ->
-             if n < bigM
-               then withR $ snoc Node n brs as bz z
-               else withL . split Node quad $ (bz, z) : nodes n brs as
+             if NonEmpty.length as < bigM
+               then withR . Node $ (bz, z) <| as
+               else withL . split Node quad $ (bz, z) <| as
 
          | otherwise ->
-             let i = leastEnlargement bz n brs
-             in case insertDepthNode (d - 1) bz z $ indexArray as i of
-                  Right (ba, a)   -> withR $ replace Node n brs as i ba a
+             let (i, least) = leastEnlargement bz as
+             in case insertDepthNode (d - 1) bz z least of
+                  Right (ba, a)   -> withR . Node . NonEmpty.fromList $ swap i (ba, a) as
                   Left (bl, l, br, r)
-                    | n < bigM  -> withR $ replaceSnoc Node n brs as i bl l br r
-                    | otherwise -> withL . split Node quad $ (bl, l) : (br, r) : discard i (nodes n brs as)
+                    | NonEmpty.length as < bigM ->
+                        withR . Node $ (br, r) :| swap i (bl, l) as
 
-       Leaf _ _ _ -> errorWithoutStackTrace $ "Data.RTree.Lazy.insertDepth: reached a leaf"
+                    | otherwise ->
+                        withL . split Node quad $ (br, r) :| swap i (bl, l) as
+
+       Leaf _ -> errorWithoutStackTrace $ "Data.RTree.Lazy.insertDepth: reached a leaf"
 
 
 
 -- | \(O (\log_M n)\). Delete the first occurrence of a given bounding rectangle, if one exists.
 --
 --   'delete' uses Guttman's original deletion and (re)insertion algorithms.
-delete :: (Num r, Ord r, Prim r) => MBR r -> RTree r a -> RTree r a
+delete :: (Num r, Ord r) => MBR r -> RTree r a -> RTree r a
 delete bz r =
   case r of
     Root _ x  ->
       let deep i (bb, b) (d, r') = let (higher, r'') = insertDepth (i - d) bb b r'
-                                  in flip (,) r'' $ if higher
-                                                      then d + 1
-                                                      else d
+                                   in flip (,) r'' $ if higher
+                                                       then d + 1
+                                                       else d
 
           f (Left (i, as)) (d, r') = Fold.foldr (deep i) (d, r') as
           f (Right as)     (d, r') = (,) d $ Fold.foldr (uncurry insertGut) r' as
@@ -118,7 +120,7 @@ delete bz r =
 
            Just (Nothing, reins) ->
              case reins of
-               Left (d, as)    : rs -> let r' = mk Node as
+               Left (d, as)    : rs -> let r' = Node $ NonEmpty.fromList as
                                        in snd $ Fold.foldr f (d, Root (union r') r') rs
                Right [(ba, a)] : [] -> Leaf1 ba a
                Right as        : [] -> Fold.foldr (uncurry insertGut) R.empty as
@@ -126,7 +128,7 @@ delete bz r =
                []                   -> errorWithoutStackTrace "Data.RTree.Lazy.delete: no reinserts"
 
            Nothing -> r
-    
+
     Leaf1 ba _ | ba == bz  -> Empty
                | otherwise -> r
 
@@ -135,7 +137,7 @@ delete bz r =
 
 
 deleteNode
-  :: (Num r, Ord r, Prim r)
+  :: (Num r, Ord r)
   => Int
   -> MBR r
   -> Node r a
@@ -143,27 +145,34 @@ deleteNode
 deleteNode d bz x =
   let withU a = (union a, a)
   in case x of
-       Node n brs as ->
-         let f i ba a
-               | MBR.contains bz ba
-               , Just (mayB, ins) <- deleteNode (d + 1) bz a
-                   = First $ Just (i, mayB, ins)
+       Node as ->
+         let f (ba, a, i) | MBR.contains bz ba
+                          , Just (mayB, ins) <- deleteNode (d + 1) bz a
+                              = First $ Just (i, mayB, ins)
 
-               | otherwise          = First Nothing
-         in case getFirst $ Array.izipMap f n brs as of
+                          | otherwise = First Nothing
+
+         in case getFirst . Fold.foldMap f $
+                              NonEmpty.zipWith (\(by, y) i -> (by, y, i)) as (0 :| [1..]) of
               Nothing                     -> Nothing
               Just (i, Just (bb, b), ins) ->
-                Just (Just . withU $ replace Node n brs as i bb b, ins)
+                Just (Just . withU . Node . NonEmpty.fromList $ swap i (bb, b) as, ins)
               Just (i, Nothing, ins) ->
-                Just $ case () of
-                         () | n <= 1      -> (Nothing, ins)
-                            | n <= smallM -> (Nothing, Left (d, discard i $ nodes n brs as) : ins)
-                            | otherwise   -> (Just . withU $ lose Node n brs as i, ins)
+                Just $
+                  case () of
+                    () | _ :| [] <- as                -> (Nothing, ins)
+                       | NonEmpty.length as <= smallM -> (Nothing, Left (d, discard i as) : ins)
+                       | otherwise   ->
+                           (Just . withU . Node . NonEmpty.fromList $ discard i as, ins)
 
-       Leaf n brs as ->
-         case getFirst $ Array.ifoldMap (\i ba -> First $ i <$ guard (ba == bz)) n brs of
-           Nothing -> Nothing
-           Just i  ->
-             Just $ if n <= smallM
-                      then (Nothing, pure . Right . discard i $ nodes n brs as)
-                      else (Just . withU $ lose Leaf n brs as i, [])
+       Leaf as ->
+         let f (ba, i) | ba == bz  = First $ Just i
+                       | otherwise = First Nothing
+
+         in case getFirst . Fold.foldMap f $
+                              NonEmpty.zipWith (\(by, _) i -> (by, i)) as (0 :| [1..]) of
+              Nothing -> Nothing
+              Just i ->
+                Just $ if NonEmpty.length as <= smallM
+                         then (Nothing, pure . Right $ discard i as)
+                         else (Just . withU . Leaf . NonEmpty.fromList $ discard i as, [])

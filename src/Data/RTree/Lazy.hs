@@ -76,7 +76,7 @@
 module Data.RTree.Lazy
   ( -- * RTree
     RTree
-  , MBR (MBR)
+  , MBR (..)
     -- * Construction
   , empty
   , singleton
@@ -129,8 +129,6 @@ module Data.RTree.Lazy
   , boxes
     -- ** Lists
   , R.toList
-    -- * Prim
-  , Prim
   ) where
 
 import           Data.RTree.Internal as R
@@ -143,10 +141,10 @@ import           Data.Foldable as Fold
 import           Data.Function (on)
 import           Data.List (sortBy)
 import qualified Data.List as List
+import           Data.List.NonEmpty (NonEmpty (..), (<|))
+import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Ord
 import           Prelude hiding (Foldable (..))
-import           Data.Primitive.Array
-import           Data.Primitive.Types
 
 
 
@@ -160,25 +158,25 @@ import           Data.Primitive.Types
 --   'smallP' of \(1\) the behavior of the algorithm is identical to Guttman's.
 --
 --   'insert' is slightly slower than 'insertGut', but produces higher quality trees.
-insert :: (Num r, Ord r, Prim r) => MBR r -> a -> RTree r a -> RTree r a
+insert :: (Num r, Ord r) => MBR r -> a -> RTree r a -> RTree r a
 insert = insert_ []
 
-insert_ :: (Num r, Ord r, Prim r) => [Int] -> MBR r -> a -> RTree r a -> RTree r a
+insert_ :: (Num r, Ord r) => [Int] -> MBR r -> a -> RTree r a -> RTree r a
 insert_ lvls bz z t =
   case t of
     Root _ x   ->
       case insertNode 0 lvls bz z x of
         Right (ins, lvls', ba, a) -> Fold.foldr (uncurry $ insert_ lvls') (Root ba a) ins
-        Left (bl, l, br, r)       -> Root (MBR.union bl br) $ mk Node [(bl, l), (br, r)]
+        Left (bl, l, br, r)       -> Root (MBR.union bl br) . Node $ (bl, l) :| [(br, r)]
 
-    Leaf1 ba a -> Root (MBR.union ba bz) $ mk Leaf [(ba, a), (bz, z)]
+    Leaf1 ba a -> Root (MBR.union ba bz) . Leaf $ (ba, a) :| [(bz, z)]
 
     Empty      -> Leaf1 bz z
 
 
 
 insertNode
-  :: (Num r, Ord r, Prim r)
+  :: (Num r, Ord r)
   => Int
   -> [Int]
   -> MBR r
@@ -189,29 +187,29 @@ insertNode lvl lvls bz z x =
   let withR ins ls a = Right (ins, ls, union a, a)
       withL (l, r)   = Left (union l, l, union r, r)
   in case x of
-       Node n brs as ->
-         let i = leastEnlargement bz n brs
-         in case insertNode (lvl + 1) lvls bz z $ indexArray as i of
-              Right (ins, lvls', ba, a) -> withR ins lvls' $ replace Node n brs as i ba a
+       Node as ->
+         let (i, least) = leastEnlargement bz as
+         in case insertNode (lvl + 1) lvls bz z least of
+              Right (ins, lvls', ba, a) ->
+                withR ins lvls' . Node . NonEmpty.fromList $ swap i (ba, a) as
 
               Left (bl, l, br, r)
-                | n < bigM  -> withR [] lvls $ replaceSnoc Node n brs as i bl l br r
-                | otherwise -> withL . split Node sorted $ (bl, l) : (br, r) : discard i (nodes n brs as)
+                | NonEmpty.length as < bigM -> withR [] lvls . Node $ (br, r) :| swap i (bl, l) as
+                | otherwise                 -> withL . split Node sorted $ (bl, l) :| ((br, r) : discard i as)
 
-       Leaf n brs as
-         | n < bigM  -> withR [] lvls $ snoc Leaf n brs as bz z
+       Leaf as
+         | NonEmpty.length as < bigM  -> withR [] lvls . Leaf $ (bz, z) <| as
 
-         | lvl `elem` lvls -> withL . split Leaf quad $ (bz, z) : nodes n brs as
+         | lvl `elem` lvls -> withL . split Leaf quad $ (bz, z) <| as
 
          | otherwise ->
              let middle = bz `MBR.union` union x
 
                  (ins, keeps) =
                    splitAt smallP $
-                     sortBy (flip on fst $ highestDistance middle) $ (bz, z) : nodes n brs as
+                     sortBy (flip on fst $ highestDistance middle) $ (bz, z) : NonEmpty.toList as
 
-             in withR ins (lvl : lvls) $ mk Leaf keeps
-
+             in withR ins (lvl : lvls) . Leaf $ NonEmpty.fromList keeps
 
 
 
@@ -219,7 +217,7 @@ insertNode lvl lvls bz z x =
 --
 --   Trees generated using this function do not respect 'smallM'.
 --   Nonetheless they are valid in regards to all operations within this library.
-bulkSTR :: (Num r, Ord r, Prim r) => [(MBR r, a)] -> RTree r a
+bulkSTR :: (Num r, Ord r) => [(MBR r, a)] -> RTree r a
 bulkSTR []        = Empty
 bulkSTR [(ba, a)] = Leaf1 ba a
 bulkSTR xs
@@ -227,20 +225,21 @@ bulkSTR xs
   | otherwise              = bulk' Leaf xs
   where
     bulk'
-      :: (Num r, Ord r, Prim r)
-      => (Int -> Array (MBR r) -> Array b -> Node r a) -> [(MBR r, b)] -> RTree r a
+      :: (Num r, Ord r)
+      => (NonEmpty (MBR r, b) -> Node r a) -> [(MBR r, b)] -> RTree r a
     bulk' f as = let ns = (\a -> (union a, a)) <$> pack f as
                  in if List.length ns > bigM
                       then bulk' Node ns
-                      else let r = mk Node ns
+                      else let r = Node $ NonEmpty.fromList ns
                            in Root (union r) r
+
     pack f as =
       let bigP :: Int
           bigP = ceiling (fromIntegral (List.length xs) / fromIntegral bigM :: Double)
 
           bigS = ceiling $ sqrt (fromIntegral bigP :: Double)
 
-      in Fold.foldMap (fmap (mk f) . part bigM . sortBy (ordY `on` fst))
+      in Fold.foldMap (fmap (f . NonEmpty.fromList) . part bigM . sortBy (ordY `on` fst))
            . part bigS $ sortBy (ordX `on` fst) as
 
 
@@ -250,5 +249,5 @@ bulkSTR xs
 --   This is not a performant function, it's merely a 'R.foldl'' over 'insert'.
 --
 --   If you're only intending to use the resulting tree for lookups, consider 'bulkSTR' instead.
-fromList :: (Num r, Ord r, Prim r) => [(MBR r, a)] -> RTree r a
+fromList :: (Num r, Ord r) => [(MBR r, a)] -> RTree r a
 fromList = Fold.foldl' (flip $ uncurry insert) Empty
