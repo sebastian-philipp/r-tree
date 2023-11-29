@@ -1,9 +1,10 @@
 cabal-version: 2.2
 
 name:                   data-r-tree
-version:                1.0.0
-synopsis:               Two-dimensional R-Trees.
-description:            Two-dimensional spatial trees utilizing R-Tree and R*-Tree algorithms.
+version:                1.1.0
+synopsis:               Two-dimensional R-trees.
+description:            Two-dimensional spatial trees utilizing R-tree and R*-tree
+                        algorithms.
 
 license:                MIT
 license-file:           LICENSE
@@ -13,7 +14,7 @@ copyright:              Sebastian Wagner, Birte Wagner, Oleksii Divak
 category:               Data Structures
 build-type:             Simple
 
-Extra-source-files:     changelog.md
+extra-doc-files:        changelog.md
                         README.md
 
 bug-reports:            https://github.com/sebastian-philipp/r-tree/issues
@@ -25,59 +26,32 @@ source-repository head
 
 
 
-flag visualizer
-  Description: Whether the visualize executable should be built.
-  Default: False
-
 library
-  build-depends:        base      >= 4.12 && < 5
-                      , deepseq   >= 1.4  && < 1.5
+  build-depends:        base      >= 4.12  && < 5
+                      , deepseq   >= 1.4.3 && < 1.6
 
   hs-source-dirs:       src
 
-  exposed-modules:      Data.RTree.MBR
-                        Data.RTree.Internal
-                        Data.RTree.Internal.Constants
-                        Data.RTree.Internal.Pretty
-                        Data.RTree.Lazy
-                        Data.RTree.Strict
+  exposed-modules:      Data.RTree.Double.Strict
+                        Data.RTree.Double.Strict.Debug
+                        Data.RTree.Double.Strict.Unsafe
+                        Data.RTree.Float.Strict
+                        Data.RTree.Float.Strict.Debug
+                        Data.RTree.Float.Strict.Unsafe
 
-  other-modules:        Data.RTree.Lazy.Internal
+  other-modules:        Data.RTree.Double.Strict.Internal
+                        Data.RTree.Float.Strict.Internal
 
   ghc-options:          -Wall
 
   default-language:     Haskell2010
 
-executable visualize
-  build-depends:        base
-                      , bytestring
-                      , colour
-                      , data-r-tree
-                      , deepseq
-                      , GLFW-b
-                      , gl
-                      , random
-                      , vector
-
-  main-is:              Main.hs
-
-  ghc-options:          -Wall -threaded
-
-  hs-source-dirs:       app/visualize
-
-  default-language:     Haskell2010
-
-  if flag (visualizer)
-    Buildable: True
-  else
-    Buildable: False
-
 benchmark time
   build-depends:        base
                       , data-r-tree
                       , deepseq
-                      , gauge
-                      , random
+                      , gauge       >= 0.2 && < 0.3
+                      , random      >= 1.2 && < 1.3
 
   type:                 exitcode-stdio-1.0
 
@@ -86,7 +60,6 @@ benchmark time
   ghc-options:          -Wall
 
   hs-source-dirs:       benchmark/time
-                      , no
 
   default-language:     Haskell2010
 
@@ -94,7 +67,7 @@ benchmark space
   build-depends:        base
                       , data-r-tree
                       , random
-                      , weigh
+                      , weigh       >= 0.0.16 && < 0.1
 
   type:                 exitcode-stdio-1.0
 
@@ -110,7 +83,7 @@ test-suite properties
   build-depends:        base
                       , data-r-tree
                       , deepseq
-                      , hspec
+                      , hspec       >= 2 && < 2.12
                       , random
 
   type:                 exitcode-stdio-1.0
@@ -119,26 +92,7 @@ test-suite properties
 
   ghc-options:          -Wall
 
-  hs-source-dirs:       test/properties
-                      , no
-
-  default-language:     Haskell2010
-
-test-suite strict
-  build-depends:        base
-                      , data-r-tree
-                      , deepseq
-                      , hspec
-                      , nothunks
-                      , random
-
-  type:                 exitcode-stdio-1.0
-
-  main-is:              Main.hs
-
-  ghc-options:          -Wall
-
-  hs-source-dirs:       test/strict
-                      , no
+  hs-source-dirs:       no
+                      , test/properties
 
   default-language:     Haskell2010

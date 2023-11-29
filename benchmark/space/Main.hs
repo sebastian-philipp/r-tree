@@ -2,8 +2,7 @@
 
 module Main where
 
-import           Data.RTree.MBR as MBR
-import qualified Data.RTree.Lazy as R
+import qualified Data.RTree.Float.Strict as R
 
 import           Control.Monad
 import           Data.Foldable
@@ -14,11 +13,11 @@ import           Weigh
 
 
 
-randMBR :: StatefulGen g m => g -> m (MBR Double)
+randMBR :: StatefulGen g m => g -> m R.MBR
 randMBR g = do
   a <- uniformRM (0, 2 ^ (20 :: Int)) g
   b <- uniformRM (0, 2 ^ (20 :: Int)) g
-  return $ MBR a b (a + 1) (b + 1)
+  return $ R.MBR a b (a + 1) (b + 1)
 
 
 

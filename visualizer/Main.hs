@@ -11,16 +11,18 @@
     revert to the previous states;
 
   - M key to switch the insertion mode, displayed as a triangle in the top right
-    of the window. Red triangle means insertGut is used, blue for insert. Switching
-    modes resets the tree to zero elements.
+    of the window. Red triangle means insertGut is used, blue for insert, green for STR.
+    Switching modes resets the tree to zero elements.
 
   Element generation is pure, generating the same list every time.
 -}
 
 module Main where
 
-import           Data.RTree.Internal (RTree (..), Node (..), MBR (MBR))
-import qualified Data.RTree.Lazy as R
+import           Data.RTree.Double.Strict (RTree, MBR)
+import qualified Data.RTree.Double.Strict as R
+import           Data.RTree.Double.Strict.Debug
+import qualified Data.RTree.Double.Strict.Unsafe as R
 
 import           Control.Concurrent
 import           Control.Exception
@@ -31,6 +33,7 @@ import           Data.ByteString.Unsafe
 import           Data.Colour
 import           Data.Colour.Names
 import           Data.Colour.SRGB
+import           Data.Colour.RGBSpace.HSV
 import           Data.IORef
 import           Data.Vector.Storable (Vector)
 import qualified Data.Vector.Storable as VS
@@ -46,11 +49,23 @@ import           System.Random.Stateful
 
 
 
-randMBR :: RandomGen g => g -> (MBR Int, g)
-randMBR g = let (a, g')  = uniformR (20, 1000) g
-                (b, g'') = uniformR (20, 1000) g'
-            in (MBR a b (a + 4) (b + 4), g'')
+randMBR :: RandomGen g => g -> (MBR, g)
+randMBR g = let (a, g')  = uniformR (20, 1000 :: Int) g
+                (b, g'') = uniformR (20, 1000 :: Int) g'
 
+                xmin = fromIntegral a
+                ymin = fromIntegral b
+                xmax = fromIntegral $ a + 4
+                ymax = fromIntegral $ b + 4
+
+            in (R.UnsafeMBR xmin ymin xmax ymax, g'')
+
+list :: RandomGen g => Int -> g -> ([MBR], g)
+list n g
+  | n <= 0    = ([], g)
+  | otherwise = let ~(bx, g')  = randMBR g
+                    ~(as, g'') = list (n - 1) g'
+                in (bx:as, g'')
 
 
 main :: IO ()
@@ -117,41 +132,61 @@ setup window = do
 
 
 
+data Mode = Gut | BKSS | STR
+
+modeHue :: Mode -> Float
+modeHue Gut  = 0
+modeHue BKSS = 210
+modeHue STR  = 105
+
 data State =
        State
          { sGen     :: StdGen
          , sOffset  :: Int
-         , sMode    :: Bool
-         , sHistory :: [RTree Int ()]
-         , sFuture  :: [RTree Int ()]
+         , sMode    :: Mode
+         , sHistory :: [RTree ()]
+         , sFuture  :: [RTree ()]
          , sVao     :: GLuint
          , sVbo     :: GLuint
          }
 
 zero :: GLuint -> GLuint -> State
-zero = State (mkStdGen 0) 0 False [] []
+zero = State (mkStdGen 4) 0 Gut [] []
 
 reset :: State -> State
-reset s = s { sGen     = mkStdGen 0
+reset s = s { sGen     = mkStdGen 4
             , sOffset  = 0
             , sHistory = []
             , sFuture  = []
             }
 
 forwards :: State -> State
-forwards s = case sFuture s of
-               []   -> let (new, g') = randMBR (sGen s)
-                           alg | sMode s   = R.insert    new ()
-                               | otherwise = R.insertGut new ()
-                       in s { sGen = g'
-                            , sHistory = case sHistory s of
-                                           []   -> alg R.empty : []
-                                           h:hs -> alg h : h : hs
-                            }
+forwards s =
+  case sFuture s of
+    []   ->
+      case sMode s of
+        Gut  -> let (new, g') = randMBR (sGen s)
+                in s { sGen = g'
+                     , sHistory = case sHistory s of
+                                    []   -> R.insertGut new () R.empty : []
+                                    h:hs -> R.insertGut new () h : h : hs
+                     }
 
-               f:fs -> s { sHistory = f : sHistory s
-                         , sFuture  = fs
-                         }
+        BKSS -> let (new, g') = randMBR (sGen s)
+                in s { sGen = g'
+                     , sHistory = case sHistory s of
+                                    []   -> R.insert new () R.empty : []
+                                    h:hs -> R.insert new () h : h : hs
+                     }
+
+        STR  -> let (boxes, _)  = list (sOffset s) (sGen s)
+                in s { sOffset  = sOffset s + 1
+                     , sHistory = R.bulkSTR (fmap (\bx -> (bx, ())) boxes) : sHistory s
+                     }
+
+    f:fs -> s { sHistory = f : sHistory s
+              , sFuture  = fs
+              }
 
 backwards :: State -> State
 backwards s = case sHistory s of
@@ -175,7 +210,13 @@ process chan s = do
                        LT -> let offset = fromIntegral $ (y - x) `quot` 2
                              in glViewport 0 offset (fromIntegral x) (fromIntegral x)
                      return (s, False)
-    Switch     -> return (reset s { sMode = not $ sMode s }, False)
+    Switch     -> return ( reset s { sMode = case sMode s of
+                                               Gut  -> BKSS
+                                               BKSS -> STR
+                                               STR  -> Gut
+                                   }
+                         , False
+                         )
     Forwards   -> return (forwards  s, False)
     Backwards  -> return (backwards s, False)
 
@@ -335,57 +376,82 @@ setupGL doneRef = do
 
 
 
-data Point = Point Int Int (Colour Float)
+data Point = Point Int Int (RGB Float)
              deriving Show
 
 flatten :: Point -> [Float]
-flatten (Point x y col) =
-  let RGB r g b = toSRGB col
-  in [ fromIntegral x / 1024, fromIntegral y / 1024, r, g, b, 1 ]
+flatten (Point x y (RGB r g b)) =
+  [ fromIntegral x / 1024, fromIntegral y / 1024, r, g, b, 1 ]
 
-mbr :: MBR Int -> Colour Float -> [Point]
-mbr (MBR xmin ymin xmax ymax) col =
-  [ Point xmin ymin col
-  , Point xmin ymax col
-  , Point xmin ymax col
-  , Point xmax ymax col
-  , Point xmax ymax col
-  , Point xmax ymin col
-  , Point xmax ymin col
-  , Point xmin ymin col
-  ]
+mbr :: MBR -> RGB Float -> [Point]
+mbr (R.UnsafeMBR xmin ymin xmax ymax) rgb =
+  let xmin_ = truncate xmin
+      ymin_ = truncate ymin
+      xmax_ = truncate xmax
+      ymax_ = truncate ymax
 
-colors :: (Floating a, Ord a) => [Colour a]
-colors = cycle [lightgreen, yellow, violet, cyan, red, magenta]
+  in [ Point xmin_ ymin_ rgb
+     , Point xmin_ ymax_ rgb
+     , Point xmin_ ymax_ rgb
+     , Point xmax_ ymax_ rgb
+     , Point xmax_ ymax_ rgb
+     , Point xmax_ ymin_ rgb
+     , Point xmax_ ymin_ rgb
+     , Point xmin_ ymin_ rgb
+     ]
 
-visualize :: RTree Int a -> [Point]
-visualize (Root ba a)  = visual 1 a <> mbr ba (colors !! 0)
+visualize :: Mode -> RTree a -> [Point]
+visualize mode (R.Root r) = visual 0 r
   where
-    visual i (Node as) = foldMap (visual $ i + 1) (snd <$> as)
-                                 <> foldMap (flip mbr $ colors !! i) (fst <$> as)
-    visual _ (Leaf as) = foldMap (flip mbr white) (fst <$> as)
+    wash i
+      | i <= 0    = hsv (modeHue mode) 1 1
+      | otherwise = let ~(h, s, v) = hsvView $ wash (i - 1)
+                    in hsv (h + 75) s (v * 3 / 4)
 
-visualize (Leaf1 ba _) = mbr ba (colors !! 0)
-visualize Empty        = []
+    visual i n =
+      let col = wash (i :: Int)
+      in case n of
+           R.Node2 ba a bb b ->
+                visual (i + 1) a <> visual (i + 1) b
+             <> mbr ba col <> mbr bb col
+
+           R.Node3 ba a bb b bc c ->
+                visual (i + 1) a <> visual (i + 1) b <> visual (i + 1) c
+             <> mbr ba col <> mbr bb col <> mbr bc col
+
+           R.Node4 ba a bb b bc c bd d ->
+                visual (i + 1) a <> visual (i + 1) b <> visual (i + 1) c <> visual (i + 1) d
+             <> mbr ba col <> mbr bb col <> mbr bc col <> mbr bd col
+
+           R.Leaf2 ba _ bb _           ->
+             mbr ba (toSRGB white) <> mbr bb (toSRGB white)
+
+           R.Leaf3 ba _ bb _ bc _      ->
+             mbr ba (toSRGB white) <> mbr bb (toSRGB white) <> mbr bc (toSRGB white)
+
+           R.Leaf4 ba _ bb _ bc _ bd _ ->
+             mbr ba (toSRGB white) <> mbr bb (toSRGB white) <> mbr bc (toSRGB white) <> mbr bd (toSRGB white)
+
+visualize _    (R.Leaf1 ba _) = mbr ba (toSRGB white)
+visualize _     R.Empty       = []
 
 
 draw :: State -> IO ()
 draw state = do
-  let mode | sMode state = [ Point 1024 1000 blue
-                           , Point 1024 1024 blue
-                           , Point 1000 1024 blue
-                           ]
-           | otherwise   = [ Point 1024 1000 red
-                           , Point 1024 1024 red
-                           , Point 1000 1024 red
-                           ]
+  let modeRGB = hsv (modeHue $ sMode state) 1 1
+
+      mode = [ Point 1024 1000 modeRGB
+             , Point 1024 1024 modeRGB
+             , Point 1000 1024 modeRGB
+             ]
+
   bufferData GL_ARRAY_BUFFER . VS.fromList $ foldMap flatten mode
   glDrawArrays GL_TRIANGLE_STRIP 0 3
 
   case sHistory state of
-    []      -> return ()
-    Empty:_ -> return ()
-    tree:_  -> do
-      let datum = visualize tree
+    []        -> return ()
+    R.Empty:_ -> return ()
+    tree:_    -> do
+      let datum = visualize (sMode state) tree
       bufferData GL_ARRAY_BUFFER . VS.fromList $ foldMap flatten datum
       glDrawArrays GL_LINES 0 (fromIntegral $ length datum)

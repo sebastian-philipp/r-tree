@@ -1,13 +1,13 @@
 {-# LANGUAGE TypeApplications #-}
 
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 module Main where
 
-import           Data.NoTree (NoTree)
-import qualified Data.NoTree as No
-import           Data.RTree.MBR as MBR
-import           Data.RTree.Lazy (RTree)
-import qualified Data.RTree.Lazy as R
+import           Data.RTree.Double.Strict (RTree, MBR, Predicate)
+import qualified Data.RTree.Double.Strict as R
 
+import           Control.DeepSeq
 import           Control.Monad
 import           Data.Foldable
 import           Data.List hiding (lookup, map)
@@ -18,81 +18,89 @@ import           System.Random.Stateful
 
 
 
-randPoint :: StatefulGen g m => g -> m (MBR Double)
+instance NFData MBR where
+  rnf ba = ba `seq` ()
+
+
+
+randPoint :: StatefulGen g m => g -> m MBR
 randPoint g = do
   a <- uniformRM (0, 2 ^ (20 :: Int)) g
   b <- uniformRM (0, 2 ^ (20 :: Int)) g
-  return $ MBR a b (a + 1) (b + 1)
+  return $ R.MBR a b (a + 1) (b + 1)
 
-randArea :: StatefulGen g m => g -> m (MBR Double)
+randArea :: StatefulGen g m => g -> m MBR
 randArea g = do
   a <- uniformRM (0, 2 ^ (20 :: Int)) g
   b <- uniformRM (0, 2 ^ (20 :: Int)) g
   c <- uniformRM (0, 2 ^ (20 :: Int)) g
   d <- uniformRM (0, 2 ^ (20 :: Int)) g
-  return $ MBR (a `min` c) (b `min` d) (a `max` c) (b `max` d)
+  return $ R.MBR a b c d
 
 
 
 newStdGenM :: IO (IOGenM StdGen)
 newStdGenM = newIOGenM $ mkStdGen 0
 
-genPoints :: StatefulGen g m => Int -> g -> m (NoTree Double Int)
-genPoints n g = No.fromList . flip zip [0..] <$> replicateM n (randPoint g)
+genPoints :: StatefulGen g m => Int -> g -> m [(MBR, Int)]
+genPoints n g = flip zip [0..] <$> replicateM n (randPoint g)
 
-genAreas :: StatefulGen g m => Int -> g -> m [MBR Double]
+genAreas :: StatefulGen g m => Int -> g -> m [MBR]
 genAreas n = replicateM n . randPoint
 
 
 
 lookup
-  :: String -> ([(MBR Double, Int)] -> RTree Double Int)
-  -> String -> (MBR Double -> R.Predicate Double) -> Benchmark
+  :: String -> ([(MBR, Int)] -> RTree Int)
+  -> String -> (MBR -> Predicate) -> Benchmark
 lookup cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
            no <- genPoints 4096 g
-           return (from $ No.toList no, take 1024 $ fst <$> No.toList no)
+           return (from no, take 1024 $ fst <$> no)
       ) $ \ ~(r, brs) ->
     bgroup (cat <> "/lookup/" <> name) $
       [ bench "First" $
           flip nf brs $
-                 foldMap $ \x -> [R.foldMap (pre x) (First . Just) r]
+                 foldMap $ \x -> [R.foldMapRangeWithKey (pre x) (\_ -> First . Just) r]
 
       , bench "List" $
           flip nf brs $
-                 foldMap $ \x -> [R.foldMap (pre x) (:[]) r]
+                 foldMap $ \x -> [R.foldMapRangeWithKey (pre x) (\_ -> (:[])) r]
       ]
 
 
 map
-  :: String -> ([(MBR Double, Int)] -> RTree Double Int)
-  -> String -> (MBR Double -> R.Predicate Double) -> Benchmark
+  :: String -> ([(MBR, Int)] -> RTree Int)
+  -> String -> (MBR -> Predicate) -> Benchmark
 map cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
            no <- genPoints 4096 g
            as <- genAreas 1024 g
-           return (from $ No.toList no, as)
+           return (from no, as)
       ) $ \ ~(r, brs) ->
     bench (cat <> "/map/" <> name) $
       flip nf brs $
-             fmap $ \x -> [R.map (pre x) (+1) r]
+             fmap $ \x -> [R.mapRangeWithKey (pre x) (\_ -> (+) 1) r]
 
 traversal
-  :: String -> ([(MBR Double, Int)] -> RTree Double Int)
-  -> String -> (MBR Double -> R.Predicate Double) -> Benchmark
+  :: String -> ([(MBR, Int)] -> RTree Int)
+  -> String -> (MBR -> Predicate) -> Benchmark
 traversal cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
            no <- genPoints 4096 g
            as <- genAreas 1024 g
-           return (from $ No.toList no, as)
+           return (from no, as)
       ) $ \ ~(r, brs) ->
     bench (cat <> "/traverse/" <> name) $
       flip nfAppIO brs $
-             traverse $ \x -> fmap (:[]) $ R.traverse (pre x) (pure @IO . (+) 1) r
+             traverse $ \x -> fmap (:[]) $ R.traverseRangeWithKey (pre x) (\_ -> pure @IO . (+) 1) r
 
 
-fromListGut :: (Foldable t, Num r, Ord r) => t (MBR r, b) -> RTree r b
-fromListGut = foldl' (flip $ uncurry R.insertGut) R.empty
+fromList :: Foldable t => t (MBR, b) -> RTree b
+fromList = foldr (uncurry R.insert) R.empty
+
+fromListGut :: Foldable t => t (MBR, b) -> RTree b
+fromListGut = foldr (uncurry R.insertGut) R.empty
 
 
 main :: IO ()
@@ -100,11 +108,11 @@ main = do
   defaultMain
     [ env ( do g <- newIOGenM $ mkStdGen 0
                no <- genPoints 4096 g
-               return $ No.toList no
+               return no
           ) $ \ ~raw ->
         bgroup "insert"
           [ bench "BKSS" $
-              nf R.fromList raw
+              nf fromList raw
 
           , bench "Gut" $
               nf fromListGut raw
@@ -115,53 +123,53 @@ main = do
 
     , env ( do g <- newIOGenM $ mkStdGen 0
                no <- genPoints 4096 g
-               return (R.fromList $ No.toList no, fst <$> No.toList no)
+               return (fromList no, fst <$> no)
           ) $ \ ~(r, brs) ->
         bench "delete" $
           nf (foldr R.delete r) brs
 
-    , lookup "BKSS" R.fromList "equals"     R.equals
-    , lookup "BKSS" R.fromList "intersects" R.intersects
-    , lookup "BKSS" R.fromList "contains"   R.contains
-    , lookup "BKSS" R.fromList "within"     R.within
+    , lookup "BKSS" fromList "equals"      R.equals
+    , lookup "BKSS" fromList "intersects"  R.intersects
+    , lookup "BKSS" fromList "contains"    R.contains
+    , lookup "BKSS" fromList "containedBy" R.containedBy
 
-    , map "BKSS" R.fromList "equals"     R.equals
-    , map "BKSS" R.fromList "intersects" R.intersects
-    , map "BKSS" R.fromList "contains"   R.contains
-    , map "BKSS" R.fromList "within"     R.within
+    , map "BKSS" fromList "equals"      R.equals
+    , map "BKSS" fromList "intersects"  R.intersects
+    , map "BKSS" fromList "contains"    R.contains
+    , map "BKSS" fromList "containedBy" R.containedBy
 
-    , traversal "BKSS" R.fromList "equals"     R.equals
-    , traversal "BKSS" R.fromList "intersects" R.intersects
-    , traversal "BKSS" R.fromList "contains"   R.contains
-    , traversal "BKSS" R.fromList "within"     R.within
+    , traversal "BKSS" fromList "equals"      R.equals
+    , traversal "BKSS" fromList "intersects"  R.intersects
+    , traversal "BKSS" fromList "contains"    R.contains
+    , traversal "BKSS" fromList "containedBy" R.containedBy
 
-    , lookup "Gut" fromListGut "equals"     R.equals
-    , lookup "Gut" fromListGut "intersects" R.intersects
-    , lookup "Gut" fromListGut "contains"   R.contains
-    , lookup "Gut" fromListGut "within"     R.within
+    , lookup "Gut" fromListGut "equals"      R.equals
+    , lookup "Gut" fromListGut "intersects"  R.intersects
+    , lookup "Gut" fromListGut "contains"    R.contains
+    , lookup "Gut" fromListGut "containedBy" R.containedBy
 
-    , map "Gut" fromListGut "equals"     R.equals
-    , map "Gut" fromListGut "intersects" R.intersects
-    , map "Gut" fromListGut "contains"   R.contains
-    , map "Gut" fromListGut "within"     R.within
+    , map "Gut" fromListGut "equals"      R.equals
+    , map "Gut" fromListGut "intersects"  R.intersects
+    , map "Gut" fromListGut "contains"    R.contains
+    , map "Gut" fromListGut "containedBy" R.containedBy
 
-    , traversal "Gut" fromListGut "equals"     R.equals
-    , traversal "Gut" fromListGut "intersects" R.intersects
-    , traversal "Gut" fromListGut "contains"   R.contains
-    , traversal "Gut" fromListGut "within"     R.within
+    , traversal "Gut" fromListGut "equals"      R.equals
+    , traversal "Gut" fromListGut "intersects"  R.intersects
+    , traversal "Gut" fromListGut "contains"    R.contains
+    , traversal "Gut" fromListGut "containedBy" R.containedBy
 
-    , lookup "STR" R.bulkSTR "equals"     R.equals
-    , lookup "STR" R.bulkSTR "intersects" R.intersects
-    , lookup "STR" R.bulkSTR "contains"   R.contains
-    , lookup "STR" R.bulkSTR "within"     R.within
+    , lookup "STR" R.bulkSTR "equals"      R.equals
+    , lookup "STR" R.bulkSTR "intersects"  R.intersects
+    , lookup "STR" R.bulkSTR "contains"    R.contains
+    , lookup "STR" R.bulkSTR "containedBy" R.containedBy
 
-    , map "STR" R.bulkSTR "equals"     R.equals
-    , map "STR" R.bulkSTR "intersects" R.intersects
-    , map "STR" R.bulkSTR "contains"   R.contains
-    , map "STR" R.bulkSTR "within"     R.within
+    , map "STR" R.bulkSTR "equals"      R.equals
+    , map "STR" R.bulkSTR "intersects"  R.intersects
+    , map "STR" R.bulkSTR "contains"    R.contains
+    , map "STR" R.bulkSTR "containedBy" R.containedBy
 
-    , traversal "STR" R.bulkSTR "equals"     R.equals
-    , traversal "STR" R.bulkSTR "intersects" R.intersects
-    , traversal "STR" R.bulkSTR "contains"   R.contains
-    , traversal "STR" R.bulkSTR "within"     R.within
+    , traversal "STR" R.bulkSTR "equals"      R.equals
+    , traversal "STR" R.bulkSTR "intersects"  R.intersects
+    , traversal "STR" R.bulkSTR "contains"    R.contains
+    , traversal "STR" R.bulkSTR "containedBy" R.containedBy
     ]

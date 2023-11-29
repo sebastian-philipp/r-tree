@@ -1,4 +1,4 @@
-## 1.0.0
+## 1.1.0
 
 Proper rewrite of the library.
 Additions are not listed, only the most important changes are.
@@ -9,33 +9,26 @@ Additions are not listed, only the most important changes are.
 
   - No longer depends on `binary`;
 
-  - Now depends on `primitive`.
-
 * `MBB`:
 
-  - Now called `MBR` and resides within `Data.RTree.MBR`;
-
-  - Now has a single type argument, the coordinate type, further referred to as `r`;
+  - Now called `MBR`;
 
   - No longer has `Binary`, `Ord` and `Generic` instances;
 
-  - `mbb` and `isPointMBB` were removed;
+  - All relevant functions have been moved to `.Unsafe` modules;
 
-  - Functions within `Data.RTree.MBR` no longer have the `MBB` prefix;
+* `RTree`:
 
-* Both `RTree` interfaces:
+  - `Data.RTree` is now called `Data.RTree.*.Strict`;
 
-  - `Data.RTree` is now called `Data.RTree.Lazy`;
-
-  - `Data.RTree.Base` is now called `Data.RTree.Internal`;
-
-  - `RTree` now has two type arguments, in the following order: `RTree r a`;
+  - Internals are now exposed in `Data.RTree.*.Strict.Unsafe`;
 
   - `Binary`, `Generic`, `Monoid` and `Semigroup` instances were removed;
 
-  - `insertWith`, `union`, `unionWith` and `mapMaybe` were removed;
+  - `insertWith`, `union`, `unionWith` and `mapMaybe`,
+    `fromList`, `toList`, `keys` and `values` were removed;
 
-  - `keys` is now called `boxes`.
+  - `length` and `null` are now only accessible from the `Foldable` typeclass;
 
   - Conversions between lookup functions:
 
@@ -49,16 +42,9 @@ Additions are not listed, only the most important changes are.
 
     - `lookupRangeWithKey` is `\ba -> foldMapWithKey (contains ba) pure`;
 
-    - `lookupContainsRange` is `\ba -> foldMap (within ba) pure`;
+    - `lookupContainsRange` is `\ba -> foldMap (containedBy ba) pure`;
 
-    - `lookupContainsRangeWithKey` is `\ba -> foldMapWithKey (within ba) pure`;
-
-* Strict `RTree` interface:
-
-  - Now shares the underlying `RTree` datatype with the lazy interface;
-
-  - The strictness guarantees have been weakened to WHNF value evaluation on full
-    tree evaluation.
+    - `lookupContainsRangeWithKey` is `\ba -> foldMapWithKey (containedBy ba) pure`;
 
 ## 0.6.0
 
