@@ -1,0 +1,33 @@
+cabal-version: 2.2
+
+name:                   r-tree-visualizer
+version:                1.0.0
+synopsis:               R-tree visualization helper.
+description:            R-tree visualization helper.
+license:                MIT
+author:                 Sebastian Wagner, Birte Wagner, Oleksii Divak
+maintainer:             Oleksii Divak <frozenwitness@gmail.com>
+copyright:              Sebastian Wagner, Birte Wagner, Oleksii Divak
+category:               Data Structures
+build-type:             Simple
+
+bug-reports:            https://github.com/sebastian-philipp/r-tree/issues
+homepage:               https://github.com/sebastian-philipp/r-tree
+
+
+
+executable visualize
+  build-depends:        base        >= 4.12 && < 5
+                      , bytestring
+                      , colour
+                      , data-r-tree
+                      , GLFW-b
+                      , gl
+                      , random
+                      , vector
+
+  main-is:              Main.hs
+
+  ghc-options:          -Wall -threaded
+
+  default-language:     Haskell2010
