@@ -64,6 +64,7 @@ module Data.RTree.Float.Strict.Internal
   , bulkSTR
   ) where
 
+import           Control.Applicative
 import           Control.DeepSeq
 import           Control.Exception (assert)
 import           Data.Bits
