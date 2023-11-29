@@ -5,7 +5,6 @@ version:                1.0.0
 synopsis:               R-tree visualization helper.
 description:            R-tree visualization helper.
 license:                MIT
-license-file:           LICENSE
 author:                 Sebastian Wagner, Birte Wagner, Oleksii Divak
 maintainer:             Oleksii Divak <frozenwitness@gmail.com>
 copyright:              Sebastian Wagner, Birte Wagner, Oleksii Divak
@@ -18,7 +17,7 @@ homepage:               https://github.com/sebastian-philipp/r-tree
 
 
 executable visualize
-  build-depends:        base
+  build-depends:        base        >= 4.12 && < 5
                       , bytestring
                       , colour
                       , data-r-tree
