@@ -1,7 +1,7 @@
 {-# OPTIONS_HADDOCK not-home #-}
 
 {- |
-     Module     : Data.RTree.D2.Double.Unsafe
+     Module     : Data.R2Tree.Float.Unsafe
      Copyright  : Copyright (c) 2015, Birte Wagner, Sebastian Philipp
                   Copyright (c) 2022, Oleksii Divak
      License    : MIT
@@ -10,10 +10,10 @@
      Stability  : experimental
      Portability: not portable
 
-     Underlying implementation of the 'RTree'.
+     Underlying implementation of the 'R2Tree'.
 -}
 
-module Data.RTree.D2.Double.Unsafe
+module Data.R2Tree.Float.Unsafe
   ( MBR (MBR, UnsafeMBR)
 
     -- | === R-tree
@@ -22,7 +22,7 @@ module Data.RTree.D2.Double.Unsafe
     --
     --   Invariant: the t'MBR' of each non-leaf node encloses
     --              all the t'MBR's inside the node.
-  , RTree (..)
+  , R2Tree (..)
 
     -- * Common operations
   , validMBR
@@ -40,4 +40,4 @@ module Data.RTree.D2.Double.Unsafe
   , Predicate (..)
   ) where
 
-import           Data.RTree.D2.Double.Internal
+import           Data.R2Tree.Float.Internal

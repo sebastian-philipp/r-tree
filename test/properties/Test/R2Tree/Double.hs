@@ -1,16 +1,16 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Test.RTree.D2.Double
+module Test.R2Tree.Double
   ( test
   ) where
 
-import qualified Data.RTree.D2.Double as R
-import           Data.RTree.D2.Double.Debug
-import           Data.RTree.D2.Double.Unsafe
+import qualified Data.R2Tree.Double as R
+import           Data.R2Tree.Double.Debug
+import           Data.R2Tree.Double.Unsafe
 import           No.Tree.D2 (NoTree)
 import qualified No.Tree.D2 as No
 import           Test.Kit
-import           Test.RTree.D2.Double.Sample
+import           Test.R2Tree.Double.Sample
 
 import           Data.Functor.Identity
 import           Data.List
@@ -262,21 +262,21 @@ predicateT = do
 
 
 
-rFromList :: [(MBR, a)] -> RTree a
+rFromList :: [(MBR, a)] -> R2Tree a
 rFromList = foldr (uncurry R.insert) R.empty
 
-rToList :: RTree a -> [(MBR, a)]
+rToList :: R2Tree a -> [(MBR, a)]
 rToList = R.foldrWithKey (\ba a -> (:) (ba, a)) []
 
 
 
-unary0 :: [Case () (RTree Int) (NoTree Int)]
+unary0 :: [Case () (R2Tree Int) (NoTree Int)]
 unary0 = foldMap (mkUnary0 rFromList) [zero, one, four, five, tiny, small, medium]
 
-unary1 :: [Case (MBR, Int) (RTree Int) (NoTree Int)]
+unary1 :: [Case (MBR, Int) (R2Tree Int) (NoTree Int)]
 unary1 = foldMap (mkUnary1 rFromList) [zero, one, four, five, tiny, small, medium]
 
-unary1_ :: [Case MBR (RTree Int) (NoTree Int)]
+unary1_ :: [Case MBR (R2Tree Int) (NoTree Int)]
 unary1_ = augment fst unary1
 
 
@@ -293,27 +293,27 @@ compareMBR (MBR x0 y0 x1 y1, a) (MBR x2 y2 x3 y3, b) =
              cmp -> cmp
     cmp -> cmp
 
-type TreeT s a = Test s (RTree a) (NoTree a) (RTree a) (NoTree a)
+type TreeT s a = Test s (R2Tree a) (NoTree a) (R2Tree a) (NoTree a)
 
-treeEq :: Ord a => RTree a -> NoTree a -> Bool
+treeEq :: Ord a => R2Tree a -> NoTree a -> Bool
 treeEq tree no =
   case validate tree of
     Valid -> sortBy compareMBR (No.toList no) == sortBy compareMBR (rToList tree)
     _     -> False
 
-type TreeIdT s a = Test s (RTree a) (NoTree a) (Identity (RTree a)) (Identity (NoTree a))
+type TreeIdT s a = Test s (R2Tree a) (NoTree a) (Identity (R2Tree a)) (Identity (NoTree a))
 
-treeIdEq :: Ord a => Identity (RTree a) -> Identity (NoTree a) -> Bool
+treeIdEq :: Ord a => Identity (R2Tree a) -> Identity (NoTree a) -> Bool
 treeIdEq (Identity tree) (Identity no) = treeEq tree no
 
 
 
-type ListT s a = Test s (RTree a) (NoTree a) [a] [a]
+type ListT s a = Test s (R2Tree a) (NoTree a) [a] [a]
 
 listEq :: Ord a => [a] -> [a] -> Bool
 listEq as bs = sort as == sort bs
 
-type ListWithKeyT s a = Test s (RTree a) (NoTree a) [(MBR, a)] [(MBR, a)]
+type ListWithKeyT s a = Test s (R2Tree a) (NoTree a) [(MBR, a)] [(MBR, a)]
 
 listWithKeyEq :: Ord a => [(MBR, a)] -> [(MBR, a)] -> Bool
 listWithKeyEq as bs = sortBy compareMBR as == sortBy compareMBR bs
@@ -337,7 +337,7 @@ mapT, mapT' :: TreeT () Int
 mapT  = mapT_ R.map
 mapT' = mapT_ R.map'
 
-mapT_ :: (forall a. (a -> a) -> RTree a -> RTree a) -> TreeT () Int
+mapT_ :: (forall a. (a -> a) -> R2Tree a -> R2Tree a) -> TreeT () Int
 mapT_ f = Test treeEq (\_ -> f negate) (\_ -> No.mapWithKey (\_ -> negate))
 
 
@@ -350,7 +350,7 @@ compressMBR :: MBR -> Int
 compressMBR (UnsafeMBR xmin ymin xmax ymax) =
   truncate xmin + truncate ymin + truncate xmax + truncate ymax
 
-mapWithKeyT_ :: (forall a. (MBR -> a -> a) -> RTree a -> RTree a) -> TreeT () Int
+mapWithKeyT_ :: (forall a. (MBR -> a -> a) -> R2Tree a -> R2Tree a) -> TreeT () Int
 mapWithKeyT_ f =
   let g k i = compressMBR k + i
   in Test treeEq (\_ -> f g) (\_ -> No.mapWithKey g)
@@ -362,7 +362,7 @@ adjustRangeWithKeyT  = adjustRangeWithKeyT_ R.adjustRangeWithKey
 adjustRangeWithKeyT' = adjustRangeWithKeyT_ R.adjustRangeWithKey'
 
 adjustRangeWithKeyT_
-  :: (forall a. Predicate -> (MBR -> a -> a) -> RTree a -> RTree a)
+  :: (forall a. Predicate -> (MBR -> a -> a) -> R2Tree a -> R2Tree a)
   -> (MBR -> Predicate)
   -> TreeT MBR Int
 adjustRangeWithKeyT_ f p =
@@ -378,7 +378,7 @@ foldMapT = foldT $ R.foldMap (:[])
 foldlT'  = foldT $ R.foldl' (flip (:)) []
 foldrT'  = foldT $ R.foldr' (:) []
 
-foldT :: (forall a. RTree a -> [a]) -> ListT () Int
+foldT :: (forall a. R2Tree a -> [a]) -> ListT () Int
 foldT f = Test listEq (\_ -> f) (\_ -> fmap snd . No.toList)
 
 
@@ -391,7 +391,7 @@ foldMapWithKeyT = foldWithKeyT $ R.foldMapWithKey (\bx x -> [(bx, x)])
 foldlWithKeyT'  = foldWithKeyT $ R.foldlWithKey' (\z bx x -> (bx, x) : z) []
 foldrWithKeyT'  = foldWithKeyT $ R.foldrWithKey' (\bx x -> (:) (bx, x)) []
 
-foldWithKeyT :: (forall a. RTree a -> [(MBR, a)]) -> ListWithKeyT () Int
+foldWithKeyT :: (forall a. R2Tree a -> [(MBR, a)]) -> ListWithKeyT () Int
 foldWithKeyT f = Test listWithKeyEq (\_ -> f) (\_ -> No.toList)
 
 
@@ -409,7 +409,7 @@ foldlRangeWithKeyT'  = foldRangeWithKeyT $ \p -> R.foldlRangeWithKey' p (\z bx x
 foldrRangeWithKeyT'  = foldRangeWithKeyT $ \p -> R.foldrRangeWithKey' p (\bx x -> (:) (bx, x)) []
 
 foldRangeWithKeyT
-  :: (forall a. Predicate -> RTree a -> [(MBR, a)])
+  :: (forall a. Predicate -> R2Tree a -> [(MBR, a)])
   -> (MBR -> Predicate) -> ListWithKeyT MBR Int
 foldRangeWithKeyT f p =
   Test listWithKeyEq (\bx -> f (p bx))
@@ -442,7 +442,7 @@ test = do
   describe "Predicate"
     predicateT
 
-  describe "RTree" $ do
+  describe "R2Tree" $ do
     describe "Single-key" $ do
       it "insert"    $ run unary1 insertT
       it "insertGut" $ run unary1 insertGutT

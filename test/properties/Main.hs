@@ -1,6 +1,6 @@
 module Main where
 
-import qualified Test.RTree.D2.Double as R2
+import qualified Test.R2Tree.Double as R2
 
 import           Test.Hspec
 

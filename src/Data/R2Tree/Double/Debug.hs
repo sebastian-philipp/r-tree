@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {- |
-     Module     : Data.RTree.D2.Double.Debug
+     Module     : Data.R2Tree.Double.Debug
      Copyright  : Copyright (c) 2015, Birte Wagner, Sebastian Philipp
                   Copyright (c) 2022, Oleksii Divak
      License    : MIT
@@ -10,11 +10,11 @@
      Stability  : experimental
      Portability: not portable
 
-     Functions that expose the innerworkings of an 'RTree', but are completely safe
+     Functions that expose the innerworkings of an 'R2Tree', but are completely safe
      to use otherwise.
 -}
 
-module Data.RTree.D2.Double.Debug
+module Data.R2Tree.Double.Debug
   ( showsTree
 
   , Validity (..)
@@ -22,13 +22,13 @@ module Data.RTree.D2.Double.Debug
   , validate
   ) where
 
-import           Data.RTree.D2.Double.Internal
+import           Data.R2Tree.Double.Internal
 
 
 
 -- | \(\mathcal{O}(n)\).
 --   Shows the internal structure of the R-tree.
-showsTree :: (a -> ShowS) -> RTree a -> ShowS
+showsTree :: (a -> ShowS) -> R2Tree a -> ShowS
 showsTree f = go id 0
   where
     {-# INLINE mbr #-}
@@ -139,7 +139,7 @@ carry4 a         _         _         _         = a
 
 -- | \(\mathcal{O}(n)\).
 --   Checks whether the tree is well-formed.
-validate :: RTree a -> Validity
+validate :: R2Tree a -> Validity
 validate t =
   case t of
     Leaf1 _ _ -> Valid

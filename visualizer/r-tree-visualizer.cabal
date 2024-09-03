@@ -20,7 +20,7 @@ executable visualize
   build-depends:        base        >= 4.12 && < 5
                       , bytestring
                       , colour
-                      , data-r-tree
+                      , r-tree
                       , GLFW-b
                       , gl
                       , random

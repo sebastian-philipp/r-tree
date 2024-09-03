@@ -4,7 +4,7 @@
            , ViewPatterns
            , UnboxedTuples #-}
 
-module Data.RTree.D2.Float.Internal
+module Data.R2Tree.Double.Internal
   ( MBR (UnsafeMBR, MBR)
   , validMBR
   , eqMBR
@@ -26,37 +26,37 @@ module Data.RTree.D2.Float.Internal
   , containedBy
   , containedBy'
 
-  , RTree (..)
+  , R2Tree (..)
 
-  , Data.RTree.D2.Float.Internal.null
-  , Data.RTree.D2.Float.Internal.size
+  , Data.R2Tree.Double.Internal.null
+  , Data.R2Tree.Double.Internal.size
 
-  , Data.RTree.D2.Float.Internal.map
+  , Data.R2Tree.Double.Internal.map
   , map'
   , mapWithKey
   , mapWithKey'
   , adjustRangeWithKey
   , adjustRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldl
-  , Data.RTree.D2.Float.Internal.foldl'
+  , Data.R2Tree.Double.Internal.foldl
+  , Data.R2Tree.Double.Internal.foldl'
   , foldlWithKey
   , foldlWithKey'
   , foldlRangeWithKey
   , foldlRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldr
-  , Data.RTree.D2.Float.Internal.foldr'
+  , Data.R2Tree.Double.Internal.foldr
+  , Data.R2Tree.Double.Internal.foldr'
   , foldrWithKey
   , foldrWithKey'
   , foldrRangeWithKey
   , foldrRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldMap
+  , Data.R2Tree.Double.Internal.foldMap
   , foldMapWithKey
   , foldMapRangeWithKey
 
-  , Data.RTree.D2.Float.Internal.traverse
+  , Data.R2Tree.Double.Internal.traverse
   , traverseWithKey
   , traverseRangeWithKey
 
@@ -87,20 +87,20 @@ import           Text.Show
 --   Degenerate intervals (i.e. \([a,a]\)) are permitted.
 data MBR = -- | Invariants: \( x_{min} \le x_{max}, y_{min} \le y_{max} \).
            UnsafeMBR
-             {-# UNPACK #-} !Float -- ^ \( x_{min} \)
-             {-# UNPACK #-} !Float -- ^ \( y_{min} \)
-             {-# UNPACK #-} !Float -- ^ \( x_{max} \)
-             {-# UNPACK #-} !Float -- ^ \( y_{max} \)
+             {-# UNPACK #-} !Double -- ^ \( x_{min} \)
+             {-# UNPACK #-} !Double -- ^ \( y_{min} \)
+             {-# UNPACK #-} !Double -- ^ \( x_{max} \)
+             {-# UNPACK #-} !Double -- ^ \( y_{max} \)
 
 {-# COMPLETE MBR #-}
 -- | Reorders coordinates to fit internal invariants.
 --
 --   Pattern matching guarantees \( x_{0} \le x_{1}, y_{0} \le y_{1} \).
 pattern MBR
-  :: Float -- ^ \( x_0 \)
-  -> Float -- ^ \( y_0 \)
-  -> Float -- ^ \( x_1 \)
-  -> Float -- ^ \( y_1 \)
+  :: Double -- ^ \( x_0 \)
+  -> Double -- ^ \( y_0 \)
+  -> Double -- ^ \( x_1 \)
+  -> Double -- ^ \( y_1 \)
   -> MBR
 pattern MBR xmin ymin xmax ymax <- UnsafeMBR xmin ymin xmax ymax
   where
@@ -145,16 +145,16 @@ unionMBR (MBR xmin ymin xmax ymax) (MBR xmin' ymin' xmax' ymax') =
 
 {-# INLINE areaMBR #-}
 -- | Proper area.
-areaMBR :: MBR -> Float
+areaMBR :: MBR -> Double
 areaMBR (MBR xmin ymin xmax ymax) = (xmax - xmin) * (ymax - ymin)
 
 {-# INLINE marginMBR #-}
 -- | Half a perimeter.
-marginMBR :: MBR -> Float
+marginMBR :: MBR -> Double
 marginMBR (MBR xmin ymin xmax ymax) = (xmax - xmin) + (ymax - ymin)
 
 {-# INLINE overlapMBR #-}
-overlapMBR :: MBR -> MBR -> Float
+overlapMBR :: MBR -> MBR -> Double
 overlapMBR =
   intersectionMBR_ $ \x y x' y' ->
     if x < x' && y < y'
@@ -164,7 +164,7 @@ overlapMBR =
 
 {-# INLINE distanceMBR #-}
 -- | Square distance between double the centers of two rectangles.
-distanceMBR :: MBR -> MBR -> Float
+distanceMBR :: MBR -> MBR -> Double
 distanceMBR (MBR xmin ymin xmax ymax) (MBR xmin' ymin' xmax' ymax') =
   let x = (xmax' + xmin') - (xmax + xmin)
       y = (ymax' + ymin') - (ymax + ymin)
@@ -205,7 +205,7 @@ intersectionMBR' =
       else Nothing
 
 {-# INLINE intersectionMBR_ #-}
-intersectionMBR_ :: (Float -> Float -> Float -> Float -> a) -> MBR -> MBR -> a
+intersectionMBR_ :: (Double -> Double -> Double -> Double -> a) -> MBR -> MBR -> a
 intersectionMBR_ f (MBR xmin ymin xmax ymax) (MBR xmin' ymin' xmax' ymax') =
   let x  = max xmin xmin'
       y  = max ymin ymin'
@@ -269,19 +269,19 @@ containedBy' bx = Predicate (intersectsMBR bx) (containsMBR' bx)
 
 
 
-instance Show a => Show (RTree a) where
+instance Show a => Show (R2Tree a) where
   showsPrec = liftShowsPrec showsPrec showList
 
-instance Show1 RTree where
+instance Show1 R2Tree where
   liftShowsPrec showsPrec_ showList_ t r =
     showParen (t > 10) $
       showListWith (liftShowsPrec showsPrec_ showList_ 0) $
         foldrWithKey (\k a -> (:) (k, a)) [] r
 
-instance Eq a => Eq (RTree a) where
+instance Eq a => Eq (R2Tree a) where
   (==) = liftEq (==)
 
-instance Eq1 RTree where
+instance Eq1 R2Tree where
   liftEq f = go
     where
       {-# INLINE node #-}
@@ -338,10 +338,10 @@ instance Eq1 RTree where
 
 
 
-instance NFData a => NFData (RTree a) where
+instance NFData a => NFData (R2Tree a) where
   rnf = liftRnf rnf
 
-instance NFData1 RTree where
+instance NFData1 R2Tree where
   liftRnf f = go
     where
       go n =
@@ -359,35 +359,35 @@ instance NFData1 RTree where
 
 
 
--- | Uses 'Data.RTree.D2.Float.Internal.map'.
-instance Functor RTree where
-  fmap = Data.RTree.D2.Float.Internal.map
+-- | Uses 'Data.R2Tree.Double.map'.
+instance Functor R2Tree where
+  fmap = Data.R2Tree.Double.Internal.map
 
-instance Foldable RTree where
-  foldl = Data.RTree.D2.Float.Internal.foldl
+instance Foldable R2Tree where
+  foldl = Data.R2Tree.Double.Internal.foldl
 
-  foldr = Data.RTree.D2.Float.Internal.foldr
+  foldr = Data.R2Tree.Double.Internal.foldr
 
-  foldMap = Data.RTree.D2.Float.Internal.foldMap
+  foldMap = Data.R2Tree.Double.Internal.foldMap
 
-  foldl' = Data.RTree.D2.Float.Internal.foldl'
+  foldl' = Data.R2Tree.Double.Internal.foldl'
 
-  foldr' = Data.RTree.D2.Float.Internal.foldr'
+  foldr' = Data.R2Tree.Double.Internal.foldr'
 
-  null = Data.RTree.D2.Float.Internal.null
+  null = Data.R2Tree.Double.Internal.null
 
   length = size
 
 
-instance Traversable RTree where
-  traverse = Data.RTree.D2.Float.Internal.traverse
+instance Traversable R2Tree where
+  traverse = Data.R2Tree.Double.Internal.traverse
 
 
 
 -- | Spine-strict two-dimensional R-tree.
-data RTree a = Node2 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
-             | Node3 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
-             | Node4 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
+data R2Tree a = Node2 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
+             | Node3 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
+             | Node4 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
 
              | Leaf2 {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a
              | Leaf3 {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a
@@ -403,14 +403,14 @@ data RTree a = Node2 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree 
 
 -- | \(\mathcal{O}(1)\).
 --   Check if the tree is empty.
-null :: RTree a -> Bool
+null :: R2Tree a -> Bool
 null Empty = True
 null _     = False
 
 -- | \(\mathcal{O}(n)\).
 --   Calculate the number of elements stored in the tree.
 --   The returned number is guaranteed to be non-negative.
-size :: RTree a -> Int
+size :: R2Tree a -> Int
 size = go
   where
     go n =
@@ -444,7 +444,7 @@ size = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all values.
-map :: (a -> b) -> RTree a -> RTree b
+map :: (a -> b) -> R2Tree a -> R2Tree b
 map f = go
   where
     go n =
@@ -474,7 +474,7 @@ map f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all values and evaluate the results to WHNF.
-map' :: (a -> b) -> RTree a -> RTree b
+map' :: (a -> b) -> R2Tree a -> R2Tree b
 map' f = go
   where
     go n =
@@ -517,7 +517,7 @@ map' f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all t'MBR's and their respective values.
-mapWithKey :: (MBR -> a -> b) -> RTree a -> RTree b
+mapWithKey :: (MBR -> a -> b) -> R2Tree a -> R2Tree b
 mapWithKey f = go
   where
     go n =
@@ -548,7 +548,7 @@ mapWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all t'MBR's and their respective values
 --   and evaluate the results to WHNF.
-mapWithKey' :: (MBR -> a -> b) -> RTree a -> RTree b
+mapWithKey' :: (MBR -> a -> b) -> R2Tree a -> R2Tree b
 mapWithKey' f = go
   where
     go n =
@@ -591,9 +591,9 @@ mapWithKey' f = go
 
 
 {-# INLINE adjustRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map a function over t'MBR's that match the 'Predicate' and their respective values.
-adjustRangeWithKey :: Predicate -> (MBR -> a -> a) -> RTree a -> RTree a
+adjustRangeWithKey :: Predicate -> (MBR -> a -> a) -> R2Tree a -> R2Tree a
 adjustRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -632,10 +632,10 @@ adjustRangeWithKey (Predicate nodePred leafPred) f = go
         Empty                     -> Empty
 
 {-# INLINE adjustRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map a function over t'MBR's that match the 'Predicate' and their respective values
 --   and evaluate the results to WHNF.
-adjustRangeWithKey' :: Predicate -> (MBR -> a -> a) -> RTree a -> RTree a
+adjustRangeWithKey' :: Predicate -> (MBR -> a -> a) -> R2Tree a -> R2Tree a
 adjustRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -689,7 +689,7 @@ adjustRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_R)\).
 --   Fold left-to-right over all values.
-foldl :: (b -> a -> b) -> b -> RTree a -> b
+foldl :: (b -> a -> b) -> b -> R2Tree a -> b
 foldl f = go
   where
     go z n =
@@ -707,7 +707,7 @@ foldl f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Fold left-to-right over all values, applying the operator function strictly.
-foldl' :: (b -> a -> b) -> b -> RTree a -> b
+foldl' :: (b -> a -> b) -> b -> R2Tree a -> b
 foldl' f = go
   where
     {-# INLINE leaf #-}
@@ -729,7 +729,7 @@ foldl' f = go
 
 -- | \(\mathcal{O}(n_R)\).
 --   Fold left-to-right over all t'MBR's and their respective values.
-foldlWithKey :: (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlWithKey :: (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlWithKey f = go
   where
     go z n =
@@ -748,7 +748,7 @@ foldlWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Fold left-to-right over all t'MBR's and their respective values,
 --   applying the operator function strictly.
-foldlWithKey' :: (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlWithKey' :: (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlWithKey' f = go
   where
     {-# INLINE leaf #-}
@@ -769,10 +769,10 @@ foldlWithKey' f = go
 
 
 {-# INLINE foldlRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_R})\).
+-- | \(\mathcal{O}(\log n + n_{I_R})\).
 --   Fold left-to-right over t'MBR's that match the 'Predicate'
 --   and their respective values.
-foldlRangeWithKey :: Predicate -> (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlRangeWithKey :: Predicate -> (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -799,10 +799,10 @@ foldlRangeWithKey (Predicate nodePred leafPred) f = go
         Empty                     -> z
 
 {-# INLINE foldlRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Fold left-to-right over t'MBR's that match the 'Predicate'
 --   and their respective values, applying the operator function strictly.
-foldlRangeWithKey' :: Predicate -> (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlRangeWithKey' :: Predicate -> (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -832,7 +832,7 @@ foldlRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_L)\).
 --   Fold right-to-left over all values.
-foldr :: (a -> b -> b) -> b -> RTree a -> b
+foldr :: (a -> b -> b) -> b -> R2Tree a -> b
 foldr f = go
   where
     go z n =
@@ -850,7 +850,7 @@ foldr f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Fold right-to-left over all values, applying the operator function strictly.
-foldr' :: (a -> b -> b) -> b -> RTree a -> b
+foldr' :: (a -> b -> b) -> b -> R2Tree a -> b
 foldr' f = go
   where
     {-# INLINE leaf #-}
@@ -872,7 +872,7 @@ foldr' f = go
 
 -- | \(\mathcal{O}(n_L)\).
 --   Fold right-to-left over all t'MBR's and their respective values.
-foldrWithKey :: (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrWithKey :: (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrWithKey f = go
   where
     go z n =
@@ -891,7 +891,7 @@ foldrWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Fold right-to-left over all t'MBR's and their respective values,
 --   applying the operator function strictly.
-foldrWithKey' :: (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrWithKey' :: (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrWithKey' f = go
   where
     {-# INLINE leaf #-}
@@ -912,10 +912,10 @@ foldrWithKey' f = go
 
 
 {-# INLINE foldrRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_L})\).
+-- | \(\mathcal{O}(\log n + n_{I_L})\).
 --   Fold right-to-left over t'MBR's that match the 'Predicate'
 --   and their respective values.
-foldrRangeWithKey :: Predicate -> (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrRangeWithKey :: Predicate -> (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -942,10 +942,10 @@ foldrRangeWithKey (Predicate nodePred leafPred) f = go
         Empty      -> z
 
 {-# INLINE foldrRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Fold right-to-left over t'MBR's that match the 'Predicate'
 --   and their respective values, applying the operator function strictly.
-foldrRangeWithKey' :: Predicate -> (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrRangeWithKey' :: Predicate -> (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -975,7 +975,7 @@ foldrRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_M)\).
 --   Map each value to a monoid and combine the results.
-foldMap :: Monoid m => (a -> m) -> RTree a -> m
+foldMap :: Monoid m => (a -> m) -> R2Tree a -> m
 foldMap f = go
   where
     go n =
@@ -994,7 +994,7 @@ foldMap f = go
 
 -- | \(\mathcal{O}(n_M)\).
 --   Map each t'MBR' and its respective value to a monoid and combine the results.
-foldMapWithKey :: Monoid m => (MBR -> a -> m) -> RTree a -> m
+foldMapWithKey :: Monoid m => (MBR -> a -> m) -> R2Tree a -> m
 foldMapWithKey f = go
   where
     go n =
@@ -1012,10 +1012,10 @@ foldMapWithKey f = go
 
 
 {-# INLINE foldMapRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_M})\).
+-- | \(\mathcal{O}(\log n + n_{I_M})\).
 --   Map each t'MBR' that matches the 'Predicate' and its respective value to a monoid
 --   and combine the results.
-foldMapRangeWithKey :: Monoid m => Predicate -> (MBR -> a -> m) -> RTree a -> m
+foldMapRangeWithKey :: Monoid m => Predicate -> (MBR -> a -> m) -> R2Tree a -> m
 foldMapRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -1043,11 +1043,10 @@ foldMapRangeWithKey (Predicate nodePred leafPred) f = go
 
 
 
-{-# INLINE traverse #-}
 -- | \(\mathcal{O}(n)\).
 --   Map each value to an action, evaluate the actions left-to-right and
 --   collect the results.
-traverse :: Applicative f => (a -> f b) -> RTree a -> f (RTree b)
+traverse :: Applicative f => (a -> f b) -> R2Tree a -> f (R2Tree b)
 traverse f = go
   where
     go n =
@@ -1082,11 +1081,10 @@ traverse f = go
         Empty                     -> pure Empty
 
 
-{-# INLINE traverseWithKey #-}
 -- | \(\mathcal{O}(n)\).
 --   Map each t'MBR' and its respective value to an action,
 --   evaluate the actions left-to-right and collect the results.
-traverseWithKey :: Applicative f => (MBR -> a -> f b) -> RTree a -> f (RTree b)
+traverseWithKey :: Applicative f => (MBR -> a -> f b) -> R2Tree a -> f (R2Tree b)
 traverseWithKey f = go
   where
     go n =
@@ -1122,11 +1120,11 @@ traverseWithKey f = go
 
 
 {-# INLINE traverseRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map each t'MBR' that matches the 'Predicate' and its respective value to an action,
 --   evaluate the actions left-to-right and collect the results.
 traverseRangeWithKey
-  :: Applicative f => Predicate -> (MBR -> a -> f a) -> RTree a -> f (RTree a)
+  :: Applicative f => Predicate -> (MBR -> a -> f a) -> R2Tree a -> f (R2Tree a)
 traverseRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -1182,8 +1180,8 @@ union4MBR ba bb bc bd = unionMBR (unionMBR ba bb) (unionMBR bc bd)
 
 
 
-data Gut a = GutOne MBR (RTree a)
-           | GutTwo MBR (RTree a) MBR (RTree a)
+data Gut a = GutOne MBR (R2Tree a)
+           | GutTwo MBR (R2Tree a) MBR (R2Tree a)
 
 -- | \(\mathcal{O}(\log n)\). Insert a value into the tree.
 --
@@ -1191,14 +1189,14 @@ data Gut a = GutOne MBR (RTree a)
 --   Compared to 'insert' the resulting trees are of lower quality (see the
 --   [Wikipedia article](https://en.wikipedia.org/w/index.php?title=R*-tree&oldid=1171720351#Performance)
 --   for a graphic example).
-insertGut :: MBR -> a -> RTree a -> RTree a
+insertGut :: MBR -> a -> R2Tree a -> R2Tree a
 insertGut bx x t =
   case insertGutRoot bx x t of
     GutOne _ o       -> o
     GutTwo bl l br r -> Node2 bl l br r
 
 
-insertGutRoot :: MBR -> a -> RTree a -> Gut a
+insertGutRoot :: MBR -> a -> R2Tree a -> Gut a
 insertGutRoot bx x n =
   case n of
     Node2 ba a bb b           ->
@@ -1254,7 +1252,7 @@ insertGutRoot bx x n =
       GutOne bx (Leaf1 bx x)
 
 
-insertGut_ :: MBR -> a -> MBR -> RTree a -> Gut a
+insertGut_ :: MBR -> a -> MBR -> R2Tree a -> Gut a
 insertGut_ bx x = go
   where
     go bn n =
@@ -1313,7 +1311,7 @@ insertGut_ bx x = go
 
 
 
-insertGutRootNode :: MBR -> RTree a -> Int -> RTree a -> Gut a
+insertGutRootNode :: MBR -> R2Tree a -> Int -> R2Tree a -> Gut a
 insertGutRootNode bx x depth n =
   case n of
     Node2 ba a bb b
@@ -1366,11 +1364,11 @@ insertGutRootNode bx x depth n =
                      GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
     _ -> assert False
-           (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertGutRootNode: reached a leaf")
+           (errorWithoutStackTrace "Data.R2Tree.Double.Internal.insertGutRootNode: reached a leaf")
                  n
 
 {-# INLINE insertGutNode #-}
-insertGutNode :: MBR -> RTree a -> Int -> MBR -> RTree a -> Gut a
+insertGutNode :: MBR -> R2Tree a -> Int -> MBR -> R2Tree a -> Gut a
 insertGutNode bx x = go
   where
     go depth bn n =
@@ -1425,14 +1423,14 @@ insertGutNode bx x = go
                          GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
         _ -> assert False
-               (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertGutNode: reached a leaf")
+               (errorWithoutStackTrace "Data.R2Tree.Double.Internal.insertGutNode: reached a leaf")
                n
 
 
 
 {-# INLINE enlargement #-}
 -- as in (adding A to B)
-enlargement :: MBR -> MBR -> Float
+enlargement :: MBR -> MBR -> Double
 enlargement bx ba = areaMBR (unionMBR ba bx) - areaMBR ba
 
 {-# INLINE leastEnlargement2 #-}
@@ -1621,16 +1619,16 @@ distribute1 q bx x =
 
 
 data Carry a = CarryLeaf MBR a
-             | CarryNode Int MBR (RTree a)
+             | CarryNode Int MBR (R2Tree a)
 
-data Ins a = InsOne MBR (RTree a)
-           | InsCarry Word (Carry a) MBR (RTree a)
-           | InsTwo Word MBR (RTree a) MBR (RTree a)
+data Ins a = InsOne MBR (R2Tree a)
+           | InsCarry Word (Carry a) MBR (R2Tree a)
+           | InsTwo Word MBR (R2Tree a) MBR (R2Tree a)
 
 -- | \(\mathcal{O}(\log n)\). Insert a value into the tree.
 --
 --   'insert' uses the R*-tree insertion algorithm.
-insert :: MBR -> a -> RTree a -> RTree a
+insert :: MBR -> a -> R2Tree a -> R2Tree a
 insert bx x n =
   case n of
     Node2 ba a bb b           ->
@@ -1705,7 +1703,7 @@ insert bx x n =
 
 
 
-insert_ :: Word -> MBR -> a -> Int -> MBR -> RTree a -> Ins a
+insert_ :: Word -> MBR -> a -> Int -> MBR -> R2Tree a -> Ins a
 insert_ mask bx x = go
   where
     go height bn n =
@@ -1790,7 +1788,7 @@ insert_ mask bx x = go
           InsOne bx (Leaf1 bx x)
 
 
-insertNode :: Word -> Int -> MBR -> RTree a -> Int -> MBR -> RTree a -> Ins a
+insertNode :: Word -> Int -> MBR -> R2Tree a -> Int -> MBR -> R2Tree a -> Ins a
 insertNode mask depth bx x = go
   where
     go height bn n =
@@ -1874,7 +1872,7 @@ insertNode mask depth bx x = go
 
 
         _ -> assert False
-               (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertNode: reached a leaf")
+               (errorWithoutStackTrace "Data.R2Tree.Double.Internal.insertNode: reached a leaf")
                n
 
 
@@ -1964,7 +1962,7 @@ group (ba, a, bb, b, bc, c, bd, d, be, e) =
    , L2 (unionMBR ba bb) ba a bb b, L3 (union3MBR bd be bc) bd d be e bc c )
 
 {-# INLINE margins #-}
-margins :: (L3 a, L2 a, L2 a, L3 a) -> Float
+margins :: (L3 a, L2 a, L2 a, L3 a) -> Double
 margins (L3 bw _ _ _ _ _ _, L2 bx _ _ _ _, L2 by _ _ _ _, L3 bz _ _ _ _ _ _) =
   marginMBR bw + marginMBR bx + marginMBR by + marginMBR bz
 
@@ -1975,7 +1973,7 @@ margins (L3 bw _ _ _ _ _ _, L2 bx _ _ _ _, L2 by _ _ _ _, L3 bz _ _ _ _ _ _) =
 --   If multiple entries qualify, the leftmost one is removed.
 --
 --   'delete' uses the R-tree deletion algorithm with quadratic-cost splits.
-delete :: MBR -> RTree a -> RTree a
+delete :: MBR -> R2Tree a -> R2Tree a
 delete bx s =
   case delete_ bx 0 s of
     DelOne _ o     -> o
@@ -2001,16 +1999,16 @@ delete bx s =
         ReCons _ _ n re' -> reintegrate (-1) n re'
         ReLeaf ba a      -> Leaf1 ba a
 
-data Re a = ReCons Int MBR (RTree a) (Re a)
+data Re a = ReCons Int MBR (R2Tree a) (Re a)
           | ReLeaf MBR a
 
 data Del a = DelNone
-           | DelOne MBR (RTree a)
-           | DelSome (Re a) MBR (RTree a)
+           | DelOne MBR (R2Tree a)
+           | DelSome (Re a) MBR (R2Tree a)
            | DelRe (Re a)
 
 {-# INLINE delete_ #-}
-delete_ :: MBR -> Int -> RTree a -> Del a
+delete_ :: MBR -> Int -> R2Tree a -> Del a
 delete_ bx = go
   where
     {-# INLINE cut2 #-}
@@ -2120,7 +2118,7 @@ quotCeil i d = let ~(p, q) = quotRem i d
                         _ -> 1
 
 slices :: Int -> Int
-slices r = ceiling (sqrt (fromIntegral (quotCeil r 4)) :: Float)
+slices r = ceiling (sqrt (fromIntegral (quotCeil r 4)) :: Double)
 
 partition1 :: Int -> [a] -> [(Int, [a])]
 partition1 n_ = go
@@ -2146,7 +2144,7 @@ partition1 n_ = go
 -- | \(\mathcal{O}(n \log n)\). Bulk-load a tree.
 --
 --   'bulkSTR' uses the Sort-Tile-Recursive algorithm.
-bulkSTR :: [(MBR, a)] -> RTree a
+bulkSTR :: [(MBR, a)] -> R2Tree a
 bulkSTR xs =
   case xs of
     _:_:_     -> snd $ vertically (length xs) xs
@@ -2183,7 +2181,7 @@ bulkSTR xs =
 
     compress [] =
       errorWithoutStackTrace
-        "Data.RTree.D2.Float.Internal.bulkSTR: zero-sized partition"
+        "Data.R2Tree.Double.Internal.bulkSTR: zero-sized partition"
 
     mend (ba, a) (bb, b) cs =
       case cs of
@@ -2215,4 +2213,4 @@ bulkSTR xs =
           (unionMBR ba bb, Leaf2 ba a bb b)
 
         _ -> errorWithoutStackTrace
-               "Data.RTree.D2.Float.Internal.bulkSTR: malformed leaf"
+               "Data.R2Tree.Double.Internal.bulkSTR: malformed leaf"
