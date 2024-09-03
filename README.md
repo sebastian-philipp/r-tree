@@ -2,9 +2,13 @@
 
 A Haskell library for [R-](https://en.wikipedia.org/wiki/R-tree) and [R\*-trees](https://en.wikipedia.org/wiki/R\*-tree).
 
+> [!NOTE]
+>
+> R-trees are self-valancing and as such can only be spine-strict.
+
 Featuring:
 
-- `Data.R2Tree.*`: spine-strict two-dimensional R-tree.
+- `Data.R2Tree.*`: two-dimensional R-tree.
 
   `Double`-based implementation is considered the default one;
   a `Float`-based variant is provided for cases where reduced precision is preferred,
