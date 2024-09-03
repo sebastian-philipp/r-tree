@@ -4,7 +4,7 @@ A Haskell library for [R-](https://en.wikipedia.org/wiki/R-tree) and [R\*-trees]
 
 > [!NOTE]
 >
-> R-trees are self-valancing and as such can only be spine-strict.
+> R-trees are self-balancing and as such can only be spine-strict.
 
 Featuring:
 
