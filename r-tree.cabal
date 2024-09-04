@@ -2,8 +2,8 @@ cabal-version: 2.2
 
 name:                   r-tree
 version:                1.0.0.0
-synopsis:               R-trees.
-description:            R/R*-trees.
+synopsis:               R-/R*-trees.
+description:            R-trees and R*-trees.
 
                         See the <https://github.com/sebastian-philipp/r-tree/blob/master/README.md README>
                         for a brief overview of the data structures included in this package.
