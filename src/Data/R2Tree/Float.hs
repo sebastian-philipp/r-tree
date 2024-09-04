@@ -21,6 +21,9 @@ module Data.R2Tree.Float
     -- * Construct
   , empty
   , singleton
+  , doubleton
+  , tripleton
+  , quadrupleton
 
     -- ** Bulk-loading
   , bulkSTR
@@ -103,3 +106,18 @@ empty = Empty
 --   Tree with a single entry.
 singleton :: MBR -> a -> R2Tree a
 singleton = Leaf1
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with two entries.
+doubleton :: MBR -> a -> MBR -> a -> R2Tree a
+doubleton = Leaf2
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with three entries.
+tripleton :: MBR -> a -> MBR -> a -> MBR -> a -> R2Tree a
+tripleton = Leaf3
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with four entries.
+quadrupleton :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> R2Tree a
+quadrupleton = Leaf4
