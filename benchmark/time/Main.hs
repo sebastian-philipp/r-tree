@@ -97,10 +97,10 @@ traversal cat from name pre =
 
 
 fromList :: Foldable t => t (MBR, b) -> R2Tree b
-fromList = foldr (uncurry R.insert) R.empty
+fromList = foldl' (\z (a, b) -> R.insert a b z) R.empty
 
 fromListGut :: Foldable t => t (MBR, b) -> R2Tree b
-fromListGut = foldr (uncurry R.insertGut) R.empty
+fromListGut = foldl' (\z (a, b) -> R.insertGut a b z) R.empty
 
 
 main :: IO ()
