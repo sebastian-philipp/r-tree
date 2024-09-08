@@ -4,7 +4,7 @@
            , ViewPatterns
            , UnboxedTuples #-}
 
-module Data.RTree.D2.Float.Internal
+module Data.R2Tree.Float.Internal
   ( MBR (UnsafeMBR, MBR)
   , validMBR
   , eqMBR
@@ -26,37 +26,37 @@ module Data.RTree.D2.Float.Internal
   , containedBy
   , containedBy'
 
-  , RTree (..)
+  , R2Tree (..)
 
-  , Data.RTree.D2.Float.Internal.null
-  , Data.RTree.D2.Float.Internal.size
+  , Data.R2Tree.Float.Internal.null
+  , Data.R2Tree.Float.Internal.size
 
-  , Data.RTree.D2.Float.Internal.map
+  , Data.R2Tree.Float.Internal.map
   , map'
   , mapWithKey
   , mapWithKey'
   , adjustRangeWithKey
   , adjustRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldl
-  , Data.RTree.D2.Float.Internal.foldl'
+  , Data.R2Tree.Float.Internal.foldl
+  , Data.R2Tree.Float.Internal.foldl'
   , foldlWithKey
   , foldlWithKey'
   , foldlRangeWithKey
   , foldlRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldr
-  , Data.RTree.D2.Float.Internal.foldr'
+  , Data.R2Tree.Float.Internal.foldr
+  , Data.R2Tree.Float.Internal.foldr'
   , foldrWithKey
   , foldrWithKey'
   , foldrRangeWithKey
   , foldrRangeWithKey'
 
-  , Data.RTree.D2.Float.Internal.foldMap
+  , Data.R2Tree.Float.Internal.foldMap
   , foldMapWithKey
   , foldMapRangeWithKey
 
-  , Data.RTree.D2.Float.Internal.traverse
+  , Data.R2Tree.Float.Internal.traverse
   , traverseWithKey
   , traverseRangeWithKey
 
@@ -69,7 +69,6 @@ module Data.RTree.D2.Float.Internal
 
 import           Control.Applicative
 import           Control.DeepSeq
-import           Control.Exception (assert)
 import           Data.Bits
 import           Data.Foldable
 import           Data.Functor.Classes
@@ -269,19 +268,19 @@ containedBy' bx = Predicate (intersectsMBR bx) (containsMBR' bx)
 
 
 
-instance Show a => Show (RTree a) where
+instance Show a => Show (R2Tree a) where
   showsPrec = liftShowsPrec showsPrec showList
 
-instance Show1 RTree where
+instance Show1 R2Tree where
   liftShowsPrec showsPrec_ showList_ t r =
     showParen (t > 10) $
       showListWith (liftShowsPrec showsPrec_ showList_ 0) $
         foldrWithKey (\k a -> (:) (k, a)) [] r
 
-instance Eq a => Eq (RTree a) where
+instance Eq a => Eq (R2Tree a) where
   (==) = liftEq (==)
 
-instance Eq1 RTree where
+instance Eq1 R2Tree where
   liftEq f = go
     where
       {-# INLINE node #-}
@@ -338,10 +337,10 @@ instance Eq1 RTree where
 
 
 
-instance NFData a => NFData (RTree a) where
+instance NFData a => NFData (R2Tree a) where
   rnf = liftRnf rnf
 
-instance NFData1 RTree where
+instance NFData1 R2Tree where
   liftRnf f = go
     where
       go n =
@@ -359,35 +358,35 @@ instance NFData1 RTree where
 
 
 
--- | Uses 'Data.RTree.D2.Float.Internal.map'.
-instance Functor RTree where
-  fmap = Data.RTree.D2.Float.Internal.map
+-- | Uses 'Data.R2Tree.Float.map'.
+instance Functor R2Tree where
+  fmap = Data.R2Tree.Float.Internal.map
 
-instance Foldable RTree where
-  foldl = Data.RTree.D2.Float.Internal.foldl
+instance Foldable R2Tree where
+  foldl = Data.R2Tree.Float.Internal.foldl
 
-  foldr = Data.RTree.D2.Float.Internal.foldr
+  foldr = Data.R2Tree.Float.Internal.foldr
 
-  foldMap = Data.RTree.D2.Float.Internal.foldMap
+  foldMap = Data.R2Tree.Float.Internal.foldMap
 
-  foldl' = Data.RTree.D2.Float.Internal.foldl'
+  foldl' = Data.R2Tree.Float.Internal.foldl'
 
-  foldr' = Data.RTree.D2.Float.Internal.foldr'
+  foldr' = Data.R2Tree.Float.Internal.foldr'
 
-  null = Data.RTree.D2.Float.Internal.null
+  null = Data.R2Tree.Float.Internal.null
 
   length = size
 
 
-instance Traversable RTree where
-  traverse = Data.RTree.D2.Float.Internal.traverse
+instance Traversable R2Tree where
+  traverse = Data.R2Tree.Float.Internal.traverse
 
 
 
 -- | Spine-strict two-dimensional R-tree.
-data RTree a = Node2 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
-             | Node3 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
-             | Node4 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree a)
+data R2Tree a = Node2 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
+             | Node3 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
+             | Node4 {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a) {-# UNPACK #-} !MBR !(R2Tree a)
 
              | Leaf2 {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a
              | Leaf3 {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a {-# UNPACK #-} !MBR a
@@ -403,14 +402,14 @@ data RTree a = Node2 {-# UNPACK #-} !MBR !(RTree a) {-# UNPACK #-} !MBR !(RTree 
 
 -- | \(\mathcal{O}(1)\).
 --   Check if the tree is empty.
-null :: RTree a -> Bool
+null :: R2Tree a -> Bool
 null Empty = True
 null _     = False
 
 -- | \(\mathcal{O}(n)\).
 --   Calculate the number of elements stored in the tree.
 --   The returned number is guaranteed to be non-negative.
-size :: RTree a -> Int
+size :: R2Tree a -> Int
 size = go
   where
     go n =
@@ -444,7 +443,7 @@ size = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all values.
-map :: (a -> b) -> RTree a -> RTree b
+map :: (a -> b) -> R2Tree a -> R2Tree b
 map f = go
   where
     go n =
@@ -474,7 +473,7 @@ map f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all values and evaluate the results to WHNF.
-map' :: (a -> b) -> RTree a -> RTree b
+map' :: (a -> b) -> R2Tree a -> R2Tree b
 map' f = go
   where
     go n =
@@ -517,7 +516,7 @@ map' f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all t'MBR's and their respective values.
-mapWithKey :: (MBR -> a -> b) -> RTree a -> RTree b
+mapWithKey :: (MBR -> a -> b) -> R2Tree a -> R2Tree b
 mapWithKey f = go
   where
     go n =
@@ -548,7 +547,7 @@ mapWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Map a function over all t'MBR's and their respective values
 --   and evaluate the results to WHNF.
-mapWithKey' :: (MBR -> a -> b) -> RTree a -> RTree b
+mapWithKey' :: (MBR -> a -> b) -> R2Tree a -> R2Tree b
 mapWithKey' f = go
   where
     go n =
@@ -591,9 +590,9 @@ mapWithKey' f = go
 
 
 {-# INLINE adjustRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map a function over t'MBR's that match the 'Predicate' and their respective values.
-adjustRangeWithKey :: Predicate -> (MBR -> a -> a) -> RTree a -> RTree a
+adjustRangeWithKey :: Predicate -> (MBR -> a -> a) -> R2Tree a -> R2Tree a
 adjustRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -632,10 +631,10 @@ adjustRangeWithKey (Predicate nodePred leafPred) f = go
         Empty                     -> Empty
 
 {-# INLINE adjustRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map a function over t'MBR's that match the 'Predicate' and their respective values
 --   and evaluate the results to WHNF.
-adjustRangeWithKey' :: Predicate -> (MBR -> a -> a) -> RTree a -> RTree a
+adjustRangeWithKey' :: Predicate -> (MBR -> a -> a) -> R2Tree a -> R2Tree a
 adjustRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -689,7 +688,7 @@ adjustRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_R)\).
 --   Fold left-to-right over all values.
-foldl :: (b -> a -> b) -> b -> RTree a -> b
+foldl :: (b -> a -> b) -> b -> R2Tree a -> b
 foldl f = go
   where
     go z n =
@@ -707,7 +706,7 @@ foldl f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Fold left-to-right over all values, applying the operator function strictly.
-foldl' :: (b -> a -> b) -> b -> RTree a -> b
+foldl' :: (b -> a -> b) -> b -> R2Tree a -> b
 foldl' f = go
   where
     {-# INLINE leaf #-}
@@ -729,7 +728,7 @@ foldl' f = go
 
 -- | \(\mathcal{O}(n_R)\).
 --   Fold left-to-right over all t'MBR's and their respective values.
-foldlWithKey :: (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlWithKey :: (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlWithKey f = go
   where
     go z n =
@@ -748,7 +747,7 @@ foldlWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Fold left-to-right over all t'MBR's and their respective values,
 --   applying the operator function strictly.
-foldlWithKey' :: (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlWithKey' :: (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlWithKey' f = go
   where
     {-# INLINE leaf #-}
@@ -769,10 +768,10 @@ foldlWithKey' f = go
 
 
 {-# INLINE foldlRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_R})\).
+-- | \(\mathcal{O}(\log n + n_{I_R})\).
 --   Fold left-to-right over t'MBR's that match the 'Predicate'
 --   and their respective values.
-foldlRangeWithKey :: Predicate -> (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlRangeWithKey :: Predicate -> (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -799,10 +798,10 @@ foldlRangeWithKey (Predicate nodePred leafPred) f = go
         Empty                     -> z
 
 {-# INLINE foldlRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Fold left-to-right over t'MBR's that match the 'Predicate'
 --   and their respective values, applying the operator function strictly.
-foldlRangeWithKey' :: Predicate -> (b -> MBR -> a -> b) -> b -> RTree a -> b
+foldlRangeWithKey' :: Predicate -> (b -> MBR -> a -> b) -> b -> R2Tree a -> b
 foldlRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -832,7 +831,7 @@ foldlRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_L)\).
 --   Fold right-to-left over all values.
-foldr :: (a -> b -> b) -> b -> RTree a -> b
+foldr :: (a -> b -> b) -> b -> R2Tree a -> b
 foldr f = go
   where
     go z n =
@@ -850,7 +849,7 @@ foldr f = go
 
 -- | \(\mathcal{O}(n)\).
 --   Fold right-to-left over all values, applying the operator function strictly.
-foldr' :: (a -> b -> b) -> b -> RTree a -> b
+foldr' :: (a -> b -> b) -> b -> R2Tree a -> b
 foldr' f = go
   where
     {-# INLINE leaf #-}
@@ -872,7 +871,7 @@ foldr' f = go
 
 -- | \(\mathcal{O}(n_L)\).
 --   Fold right-to-left over all t'MBR's and their respective values.
-foldrWithKey :: (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrWithKey :: (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrWithKey f = go
   where
     go z n =
@@ -891,7 +890,7 @@ foldrWithKey f = go
 -- | \(\mathcal{O}(n)\).
 --   Fold right-to-left over all t'MBR's and their respective values,
 --   applying the operator function strictly.
-foldrWithKey' :: (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrWithKey' :: (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrWithKey' f = go
   where
     {-# INLINE leaf #-}
@@ -912,10 +911,10 @@ foldrWithKey' f = go
 
 
 {-# INLINE foldrRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_L})\).
+-- | \(\mathcal{O}(\log n + n_{I_L})\).
 --   Fold right-to-left over t'MBR's that match the 'Predicate'
 --   and their respective values.
-foldrRangeWithKey :: Predicate -> (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrRangeWithKey :: Predicate -> (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -942,10 +941,10 @@ foldrRangeWithKey (Predicate nodePred leafPred) f = go
         Empty      -> z
 
 {-# INLINE foldrRangeWithKey' #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Fold right-to-left over t'MBR's that match the 'Predicate'
 --   and their respective values, applying the operator function strictly.
-foldrRangeWithKey' :: Predicate -> (MBR -> a -> b -> b) -> b -> RTree a -> b
+foldrRangeWithKey' :: Predicate -> (MBR -> a -> b -> b) -> b -> R2Tree a -> b
 foldrRangeWithKey' (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -975,7 +974,7 @@ foldrRangeWithKey' (Predicate nodePred leafPred) f = go
 
 -- | \(\mathcal{O}(n_M)\).
 --   Map each value to a monoid and combine the results.
-foldMap :: Monoid m => (a -> m) -> RTree a -> m
+foldMap :: Monoid m => (a -> m) -> R2Tree a -> m
 foldMap f = go
   where
     go n =
@@ -994,7 +993,7 @@ foldMap f = go
 
 -- | \(\mathcal{O}(n_M)\).
 --   Map each t'MBR' and its respective value to a monoid and combine the results.
-foldMapWithKey :: Monoid m => (MBR -> a -> m) -> RTree a -> m
+foldMapWithKey :: Monoid m => (MBR -> a -> m) -> R2Tree a -> m
 foldMapWithKey f = go
   where
     go n =
@@ -1012,10 +1011,10 @@ foldMapWithKey f = go
 
 
 {-# INLINE foldMapRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{{range}_M})\).
+-- | \(\mathcal{O}(\log n + n_{I_M})\).
 --   Map each t'MBR' that matches the 'Predicate' and its respective value to a monoid
 --   and combine the results.
-foldMapRangeWithKey :: Monoid m => Predicate -> (MBR -> a -> m) -> RTree a -> m
+foldMapRangeWithKey :: Monoid m => Predicate -> (MBR -> a -> m) -> R2Tree a -> m
 foldMapRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -1043,11 +1042,10 @@ foldMapRangeWithKey (Predicate nodePred leafPred) f = go
 
 
 
-{-# INLINE traverse #-}
 -- | \(\mathcal{O}(n)\).
 --   Map each value to an action, evaluate the actions left-to-right and
 --   collect the results.
-traverse :: Applicative f => (a -> f b) -> RTree a -> f (RTree b)
+traverse :: Applicative f => (a -> f b) -> R2Tree a -> f (R2Tree b)
 traverse f = go
   where
     go n =
@@ -1082,11 +1080,10 @@ traverse f = go
         Empty                     -> pure Empty
 
 
-{-# INLINE traverseWithKey #-}
 -- | \(\mathcal{O}(n)\).
 --   Map each t'MBR' and its respective value to an action,
 --   evaluate the actions left-to-right and collect the results.
-traverseWithKey :: Applicative f => (MBR -> a -> f b) -> RTree a -> f (RTree b)
+traverseWithKey :: Applicative f => (MBR -> a -> f b) -> R2Tree a -> f (R2Tree b)
 traverseWithKey f = go
   where
     go n =
@@ -1122,11 +1119,11 @@ traverseWithKey f = go
 
 
 {-# INLINE traverseRangeWithKey #-}
--- | \(\mathcal{O}(r + n_{range})\).
+-- | \(\mathcal{O}(\log n + n_I)\).
 --   Map each t'MBR' that matches the 'Predicate' and its respective value to an action,
 --   evaluate the actions left-to-right and collect the results.
 traverseRangeWithKey
-  :: Applicative f => Predicate -> (MBR -> a -> f a) -> RTree a -> f (RTree a)
+  :: Applicative f => Predicate -> (MBR -> a -> f a) -> R2Tree a -> f (R2Tree a)
 traverseRangeWithKey (Predicate nodePred leafPred) f = go
   where
     {-# INLINE node #-}
@@ -1182,8 +1179,8 @@ union4MBR ba bb bc bd = unionMBR (unionMBR ba bb) (unionMBR bc bd)
 
 
 
-data Gut a = GutOne MBR (RTree a)
-           | GutTwo MBR (RTree a) MBR (RTree a)
+data Gut a = GutOne MBR (R2Tree a)
+           | GutTwo MBR (R2Tree a) MBR (R2Tree a)
 
 -- | \(\mathcal{O}(\log n)\). Insert a value into the tree.
 --
@@ -1191,18 +1188,18 @@ data Gut a = GutOne MBR (RTree a)
 --   Compared to 'insert' the resulting trees are of lower quality (see the
 --   [Wikipedia article](https://en.wikipedia.org/w/index.php?title=R*-tree&oldid=1171720351#Performance)
 --   for a graphic example).
-insertGut :: MBR -> a -> RTree a -> RTree a
+insertGut :: MBR -> a -> R2Tree a -> R2Tree a
 insertGut bx x t =
   case insertGutRoot bx x t of
     GutOne _ o       -> o
     GutTwo bl l br r -> Node2 bl l br r
 
 
-insertGutRoot :: MBR -> a -> RTree a -> Gut a
+insertGutRoot :: MBR -> a -> R2Tree a -> Gut a
 insertGutRoot bx x n =
   case n of
     Node2 ba a bb b           ->
-      let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+      let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
       in case insertGut_ bx x be e of
            GutOne bo o ->
              GutOne (unionMBR bo bz) (Node2 bo o bz z)
@@ -1211,7 +1208,7 @@ insertGutRoot bx x n =
              GutOne (union3MBR bl br bz) (Node3 bl l br r bz z)
 
     Node3 ba a bb b bc c      ->
-      let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+      let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
       in case insertGut_ bx x be e of
            GutOne bo o ->
              GutOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1220,7 +1217,7 @@ insertGutRoot bx x n =
              GutOne (union4MBR bl br by bz) (Node4 bl l br r by y bz z)
 
     Node4 ba a bb b bc c bd d ->
-      let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+      let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
       in case insertGut_ bx x be e of
            GutOne bo o ->
              GutOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1254,13 +1251,13 @@ insertGutRoot bx x n =
       GutOne bx (Leaf1 bx x)
 
 
-insertGut_ :: MBR -> a -> MBR -> RTree a -> Gut a
+insertGut_ :: MBR -> a -> MBR -> R2Tree a -> Gut a
 insertGut_ bx x = go
   where
     go bn n =
      case n of
        Node2 ba a bb b           ->
-         let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+         let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
          in case go be e of
               GutOne bo o ->
                 GutOne (unionMBR bo bz) (Node2 bo o bz z)
@@ -1269,7 +1266,7 @@ insertGut_ bx x = go
                 GutOne (union3MBR bl br bz) (Node3 bl l br r bz z)
 
        Node3 ba a bb b bc c      ->
-         let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+         let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
          in case go be e of
               GutOne bo o ->
                 GutOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1278,7 +1275,7 @@ insertGut_ bx x = go
                 GutOne (union4MBR bl br by bz) (Node4 bl l br r by y bz z)
 
        Node4 ba a bb b bc c bd d ->
-         let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+         let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
          in case go be e of
               GutOne bo o ->
                 GutOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1313,7 +1310,7 @@ insertGut_ bx x = go
 
 
 
-insertGutRootNode :: MBR -> RTree a -> Int -> RTree a -> Gut a
+insertGutRootNode :: MBR -> R2Tree a -> Int -> R2Tree a -> Gut a
 insertGutRootNode bx x depth n =
   case n of
     Node2 ba a bb b
@@ -1321,7 +1318,7 @@ insertGutRootNode bx x depth n =
           GutOne (union3MBR ba bb bx) (Node3 ba a bb b bx x)
 
       | otherwise ->
-          let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+          let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
           in case insertGutNode bx x (depth - 1) be e of
                GutOne bo o ->
                  GutOne (unionMBR bo bz) (Node2 bo o bz z)
@@ -1334,7 +1331,7 @@ insertGutRootNode bx x depth n =
           GutOne (union4MBR ba bb bc bx) (Node4 ba a bb b bc c bx x)
 
       | otherwise ->
-          let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+          let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
           in case insertGutNode bx x (depth - 1) be e of
                GutOne bo o ->
                  GutOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1352,7 +1349,7 @@ insertGutRootNode bx x depth n =
               GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
       | otherwise ->
-          let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+          let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
           in case insertGutNode bx x (depth - 1) be e of
                GutOne bo o ->
                  GutOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1365,12 +1362,9 @@ insertGutRootNode bx x depth n =
                    Q3R (L2 bl' bm m bo o) (L3 br' bp p bq q bs s) ->
                      GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
-    _ -> assert False
-           (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertGutRootNode: reached a leaf")
-                 n
+    _ -> errorWithoutStackTrace "Data.R2Tree.Float.Internal.insertGutRootNode: reached a leaf"
 
-{-# INLINE insertGutNode #-}
-insertGutNode :: MBR -> RTree a -> Int -> MBR -> RTree a -> Gut a
+insertGutNode :: MBR -> R2Tree a -> Int -> MBR -> R2Tree a -> Gut a
 insertGutNode bx x = go
   where
     go depth bn n =
@@ -1380,7 +1374,7 @@ insertGutNode bx x = go
               GutOne (unionMBR bn bx) (Node3 ba a bb b bx x)
 
           | otherwise ->
-              let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+              let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
               in case go (depth - 1) be e of
                    GutOne bo o ->
                      GutOne (unionMBR bo bz) (Node2 bo o bz z)
@@ -1393,7 +1387,7 @@ insertGutNode bx x = go
               GutOne (unionMBR bn bx) (Node4 ba a bb b bc c bx x)
 
           | otherwise ->
-              let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+              let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
               in case go (depth - 1) be e of
                    GutOne bo o ->
                      GutOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1411,7 +1405,7 @@ insertGutNode bx x = go
                   GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
           | otherwise ->
-              let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+              let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
               in case go (depth - 1) be e of
                    GutOne bo o ->
                      GutOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1424,9 +1418,7 @@ insertGutNode bx x = go
                        Q3R (L2 bl' bm m bo o) (L3 br' bp p bq q bs s) ->
                          GutTwo bl' (Node2 bm m bo o) br' (Node3 bp p bq q bs s)
 
-        _ -> assert False
-               (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertGutNode: reached a leaf")
-               n
+        _ -> errorWithoutStackTrace "Data.R2Tree.Float.Internal.insertGutNode: reached a leaf"
 
 
 
@@ -1435,11 +1427,10 @@ insertGutNode bx x = go
 enlargement :: MBR -> MBR -> Float
 enlargement bx ba = areaMBR (unionMBR ba bx) - areaMBR ba
 
-{-# INLINE leastEnlargement2 #-}
-leastEnlargement2 :: MBR -> MBR -> a -> MBR -> a -> (MBR, a, MBR, a)
+leastEnlargement2 :: MBR -> MBR -> a -> MBR -> a -> (# MBR, a, MBR, a #)
 leastEnlargement2 bx ba a bb b =
-  let aw = (ba, a, bb, b)
-      bw = (bb, b, ba, a)
+  let aw = (# ba, a, bb, b #)
+      bw = (# bb, b, ba, a #)
 
   in case enlargement bx ba `compare` enlargement bx bb of
        GT -> bw
@@ -1447,14 +1438,14 @@ leastEnlargement2 bx ba a bb b =
        EQ | areaMBR ba <= areaMBR bb -> aw
           | otherwise                -> bw
 
-{-# INLINE leastEnlargement3 #-}
-leastEnlargement3 :: MBR -> MBR -> a -> MBR -> a -> MBR -> a -> (MBR, a, MBR, a, MBR, a)
+leastEnlargement3
+  :: MBR -> MBR -> a -> MBR -> a -> MBR -> a -> (# MBR, a, MBR, a, MBR, a #)
 leastEnlargement3 bx ba a bb b bc c =
-  let aw = let (be, e, by, y) = leastEnlargement2 bx ba a bc c
-           in (be, e, by, y, bb, b)
+  let aw = let !(# be, e, by, y #) = leastEnlargement2 bx ba a bc c
+           in (# be, e, by, y, bb, b #)
 
-      bw = let (be, e, by, y) = leastEnlargement2 bx bb b bc c
-           in (be, e, by, y, ba, a)
+      bw = let !(# be, e, by, y #) = leastEnlargement2 bx bb b bc c
+           in (# be, e, by, y, ba, a #)
 
   in case enlargement bx ba `compare` enlargement bx bb of
        GT -> bw
@@ -1462,144 +1453,133 @@ leastEnlargement3 bx ba a bb b bc c =
        EQ | areaMBR ba <= areaMBR bb -> aw
           | otherwise                -> bw
 
-{-# INLINE leastEnlargement4 #-}
 leastEnlargement4
   :: MBR -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a
-  -> (MBR, a, MBR, a, MBR, a, MBR, a)
+  -> (# MBR, a, MBR, a, MBR, a, MBR, a #)
 leastEnlargement4 bx ba a bb b bc c bd d =
-  let (be, e, bn, n) = leastEnlargement2 bx ba a bb b
-      (bf, f, bo, o) = leastEnlargement2 bx bc c bd d
-      (bg, g, bp, p) = leastEnlargement2 bx be e bf f
+  let !(# be, e, bn, n #) = leastEnlargement2 bx ba a bb b
+      !(# bf, f, bo, o #) = leastEnlargement2 bx bc c bd d
+      !(# bg, g, bp, p #) = leastEnlargement2 bx be e bf f
 
-  in (bg, g, bn, n, bo, o, bp, p)
-
-
-
-data L2 a = L2 MBR MBR a MBR a
-
-data L3 a = L3 MBR MBR a MBR a MBR a
-
-data Q1 a = Q1L (L2 a) MBR a
-          | Q1R MBR a (L2 a)
-
-data Q2 a = Q2L (L3 a) MBR a
-          | Q2M (L2 a) (L2 a)
-          | Q2R MBR a (L3 a)
-
-data Q3 a = Q3L (L3 a) (L2 a)
-          | Q3R (L2 a) (L3 a)
+  in (# bg, g, bn, n, bo, o, bp, p #)
 
 
 
-{-# NOINLINE quadSplit #-}
+data L2 a = L2 !MBR !MBR a !MBR a
+
+data L3 a = L3 !MBR !MBR a !MBR a !MBR a
+
+data Q1 a = Q1L !(L2 a) !MBR a
+          | Q1R !MBR a !(L2 a)
+
+data Q2 a = Q2L !(L3 a) !MBR a
+          | Q2M !(L2 a) !(L2 a)
+          | Q2R !MBR a !(L3 a)
+
+data Q3 a = Q3L !(L3 a) !(L2 a)
+          | Q3R !(L2 a) !(L3 a)
+
+
+
 quadSplit :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> Q3 a
 quadSplit ba a bb b bc c bd d be e =
-  let (bl, l, br, r, bx, x, by, y, bz, z) = pickSeeds ba a bb b bc c bd d be e
-      (q1, bv, v, bw, w) = distribute3 bl l br r bx x by y bz z
-      (q2, bu, u) = distribute2 q1 bv v bw w
+  let !(# bl, l, br, r, bx, x, by, y, bz, z #) = pickSeeds ba a bb b bc c bd d be e
+      !(# q1, bv, v, bw, w #) = distribute3 bl l br r bx x by y bz z
+      !(# q2, bu, u #) = distribute2 q1 bv v bw w
 
   in distribute1 q2 bu u
 
 
 
-{-# INLINE pickSeeds #-}
 pickSeeds
   :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a
-  -> (MBR, a, MBR, a, MBR, a, MBR, a, MBR, a)
+  -> (# MBR, a, MBR, a, MBR, a, MBR, a, MBR, a #)
 pickSeeds ba a bb b bc c bd d be e =
   let waste bx by = areaMBR (unionMBR bx by) - areaMBR bx - areaMBR by
 
-      align x@( bw, _, bx, _, _, _, _, _, _, _ )
-            y@( by, _, bz, _, _, _, _, _, _, _ )
+      align x@(# bw, _, bx, _, _, _, _, _, _, _ #)
+            y@(# by, _, bz, _, _, _, _, _, _, _ #)
         | waste bw bx > waste by bz = x
         | otherwise                 = y
 
-  in align ( ba, a, bb, b, bc, c, bd, d, be, e )
-   . align ( ba, a, bc, c, bb, b, bd, d, be, e )
-   . align ( ba, a, bd, d, bb, b, bc, c, be, e )
-   . align ( ba, a, be, e, bb, b, bc, c, bd, d )
-   . align ( bb, b, bc, c, ba, a, bd, d, be, e )
-   . align ( bb, b, bd, d, ba, a, bc, c, be, e )
-   . align ( bb, b, be, e, ba, a, bc, c, bd, d )
-   . align ( bc, c, bd, d, ba, a, bb, b, be, e )
-   $ align ( bc, c, be, e, ba, a, bb, b, bd, d )
-           ( bd, d, be, e, ba, a, bb, b, bc, c )
+  in align (# ba, a, bb, b, bc, c, bd, d, be, e #)
+   ( align (# ba, a, bc, c, bb, b, bd, d, be, e #)
+   ( align (# ba, a, bd, d, bb, b, bc, c, be, e #)
+   ( align (# ba, a, be, e, bb, b, bc, c, bd, d #)
+   ( align (# bb, b, bc, c, ba, a, bd, d, be, e #)
+   ( align (# bb, b, bd, d, ba, a, bc, c, be, e #)
+   ( align (# bb, b, be, e, ba, a, bc, c, bd, d #)
+   ( align (# bc, c, bd, d, ba, a, bb, b, be, e #)
+   ( align (# bc, c, be, e, ba, a, bb, b, bd, d #)
+           (# bd, d, be, e, ba, a, bb, b, bc, c #) ))))))))
 
 
 
-{-# INLINE distribute3 #-}
 distribute3
-  :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> (Q1 a, MBR, a, MBR, a)
+  :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> (# Q1 a, MBR, a, MBR, a #)
 distribute3 bl l br r bx x by y bz z =
   let delta ba = abs (enlargement ba bl - enlargement ba br)
 
-      (be, !e, !bu, !u, !bv, !v) = if delta bx >= delta by
-                                     then if delta bx >= delta bz
-                                            then (bx, x, by, y, bz, z)
-                                            else (bz, z, bx, x, by, y)
+      !(# be, !e, !bu, !u, !bv, !v #) = if delta bx >= delta by
+                                          then if delta bx >= delta bz
+                                                 then (# bx, x, by, y, bz, z #)
+                                                 else (# bz, z, bx, x, by, y #)
 
-                                     else if delta by >= delta bz
-                                            then (by, y, bx, x, bz, z)
-                                            else (bz, z, bx, x, by, y)
+                                          else if delta by >= delta bz
+                                                 then (# by, y, bx, x, bz, z #)
+                                                 else (# bz, z, bx, x, by, y #)
 
       lw = Q1L (L2 (unionMBR bl be) bl l be e) br r
 
       rw = Q1R bl l (L2 (unionMBR br be) br r be e)
 
-  in ( case enlargement be bl `compare` enlargement be br of
-          GT -> rw
-          LT -> lw
-          EQ | areaMBR bl < areaMBR br -> lw
-             | otherwise               -> rw
-     , bu
-     , u
-     , bv
-     , v
-     )
+      !q1 = case enlargement be bl `compare` enlargement be br of
+              GT -> rw
+              LT -> lw
+              EQ | areaMBR bl < areaMBR br -> lw
+                 | otherwise               -> rw
+
+  in (# q1, bu, u, bv, v #)
 
 
 
-{-# INLINE distribute2 #-}
-distribute2 :: Q1 a -> MBR -> a -> MBR -> a -> (Q2 a, MBR, a)
+distribute2 :: Q1 a -> MBR -> a -> MBR -> a -> (# Q2 a, MBR, a #)
 distribute2 q bx x by y =
   let delta bl br bd = abs (enlargement bd bl - enlargement bd br)
   in case q of
        Q1L l@(L2 bl ba a bb b) br r ->
-         let (be, !e, !bz, !z) | delta bl br bx >= delta bl br by = (bx, x, by, y)
-                               | otherwise                        = (by, y, bx, x)
+         let !(# be, !e, !bz, !z #) | delta bl br bx >= delta bl br by = (# bx, x, by, y #)
+                                    | otherwise                        = (# by, y, bx, x #)
 
              lw = Q2L (L3 (unionMBR bl be) ba a bb b be e) br r
 
              rw = Q2M l (L2 (unionMBR br be) br r be e)
 
-         in ( case enlargement be bl `compare` enlargement be br of
-                 GT -> rw
-                 LT -> lw
-                 EQ | areaMBR bl <= areaMBR br -> lw
-                    | otherwise                -> rw
-             , bz
-             , z
-             )
+             !q2 = case enlargement be bl `compare` enlargement be br of
+                     GT -> rw
+                     LT -> lw
+                     EQ | areaMBR bl <= areaMBR br -> lw
+                        | otherwise                -> rw
+
+         in (# q2, bz, z #)
 
        Q1R bl l r@(L2 br ba a bb b) ->
-         let (be, !e, !bz, !z) | delta bl br bx >= delta bl br by = (bx, x, by, y)
-                               | otherwise                        = (by, y, bx, x)
+         let !(# be, !e, !bz, !z #) | delta bl br bx >= delta bl br by = (# bx, x, by, y #)
+                                    | otherwise                        = (# by, y, bx, x #)
 
              lw = Q2M (L2 (unionMBR bl be) bl l be e) r
 
              rw = Q2R bl l (L3 (unionMBR br be) ba a bb b be e)
 
-         in ( case enlargement be bl `compare` enlargement be br of
-                 GT -> rw
-                 LT -> lw
-                 EQ | areaMBR bl <= areaMBR br -> lw
-                    | otherwise                -> rw
-             , bz
-             , z
-             )
+             !q2 = case enlargement be bl `compare` enlargement be br of
+                     GT -> rw
+                     LT -> lw
+                     EQ | areaMBR bl <= areaMBR br -> lw
+                        | otherwise                -> rw
+
+         in (# q2, bz, z #)
 
 
-{-# INLINE distribute1 #-}
 distribute1 :: Q2 a -> MBR -> a -> Q3 a
 distribute1 q bx x =
   case q of
@@ -1621,21 +1601,21 @@ distribute1 q bx x =
 
 
 data Carry a = CarryLeaf MBR a
-             | CarryNode Int MBR (RTree a)
+             | CarryNode Int MBR (R2Tree a)
 
-data Ins a = InsOne MBR (RTree a)
-           | InsCarry Word (Carry a) MBR (RTree a)
-           | InsTwo Word MBR (RTree a) MBR (RTree a)
+data Ins a = InsOne MBR (R2Tree a)
+           | InsCarry Word (Carry a) MBR (R2Tree a)
+           | InsTwo Word MBR (R2Tree a) MBR (R2Tree a)
 
 -- | \(\mathcal{O}(\log n)\). Insert a value into the tree.
 --
 --   'insert' uses the R*-tree insertion algorithm.
-insert :: MBR -> a -> RTree a -> RTree a
+insert :: MBR -> a -> R2Tree a -> R2Tree a
 insert bx x n =
   case n of
     Node2 ba a bb b           ->
       let add f bg g bh h =
-            let (be, e, !bz, !z) = leastEnlargement2 bx bg g bh h
+            let !(# be, e, !bz, !z #) = leastEnlargement2 bx bg g bh h
             in case f be e of
                  InsOne bo o              -> Node2 bo o bz z
                  InsCarry mask carry bo o ->
@@ -1652,7 +1632,7 @@ insert bx x n =
 
     Node3 ba a bb b bc c      ->
       let add f bg g bh h bi i =
-            let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx bg g bh h bi i
+            let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx bg g bh h bi i
             in case f be e of
                  InsOne bo o              -> Node3 bo o by y bz z
                  InsCarry mask carry bo o ->
@@ -1669,7 +1649,7 @@ insert bx x n =
 
     Node4 ba a bb b bc c bd d ->
       let add f bg g bh h bi i bj j =
-            let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx bg g bh h bi i bj j
+            let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx bg g bh h bi i bj j
             in case f be e of
                  InsOne bo o              -> Node4 bo o bw w by y bz z
                  InsCarry mask carry bo o ->
@@ -1705,13 +1685,13 @@ insert bx x n =
 
 
 
-insert_ :: Word -> MBR -> a -> Int -> MBR -> RTree a -> Ins a
+insert_ :: Word -> MBR -> a -> Int -> MBR -> R2Tree a -> Ins a
 insert_ mask bx x = go
   where
     go height bn n =
       case n of
         Node2 ba a bb b           ->
-          let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+          let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
           in case go (height + 1) be e of
                InsOne bo o               -> InsOne (unionMBR bo bz) (Node2 bo o bz z)
                InsCarry mask' carry bo o ->
@@ -1721,7 +1701,7 @@ insert_ mask bx x = go
                  InsOne (union3MBR bl br bz) (Node3 bl l br r bz z)
 
         Node3 ba a bb b bc c      ->
-          let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+          let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
           in case go (height + 1) be e of
                InsOne bo o               ->
                  InsOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1733,7 +1713,7 @@ insert_ mask bx x = go
                  InsOne (union4MBR bl br by bz) (Node4 bl l br r by y bz z)
 
         Node4 ba a bb b bc c bd d ->
-          let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+          let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
           in case go (height + 1) be e of
                InsOne bo o               ->
                  InsOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1753,8 +1733,8 @@ insert_ mask bx x = go
                             InsTwo mask bl' (Node2 bm m bo o) br' (Node3 bp p bs s bt t)
 
                       _ ->
-                        let (bm, m, bo, o, bp, p, bs, s, bt, t ) =
-                               sort5 (distance (unionMBR bn bx)) bl l br r bw w by y bz z
+                        let !(# bm, m, bo, o, bp, p, bs, s, bt, t #) =
+                               sort5Distance (unionMBR bn bx) bl l br r bw w by y bz z
 
                         in InsCarry (mask .|. bit_) (CarryNode height bt t)
                              (union4MBR bm bo bp bs) (Node4 bm m bo o bp p bs s)
@@ -1777,8 +1757,8 @@ insert_ mask bx x = go
                      InsTwo mask bl (Leaf2 bu u bv v) br (Leaf3 bw w by y bz z)
 
                _ ->
-                 let (bu, u, bv, v, bw, w, by, y, bz, z) =
-                        sort5 (distance (unionMBR bn bx)) ba a bb b bc c bd d bx x
+                 let !(# bu, u, bv, v, bw, w, by, y, bz, z #) =
+                        sort5Distance (unionMBR bn bx) ba a bb b bc c bd d bx x
 
                  in InsCarry (mask .|. bit_) (CarryLeaf bz z)
                       (union4MBR bu bv bw by) (Leaf4 bu u bv v bw w by y)
@@ -1790,14 +1770,14 @@ insert_ mask bx x = go
           InsOne bx (Leaf1 bx x)
 
 
-insertNode :: Word -> Int -> MBR -> RTree a -> Int -> MBR -> RTree a -> Ins a
+insertNode :: Word -> Int -> MBR -> R2Tree a -> Int -> MBR -> R2Tree a -> Ins a
 insertNode mask depth bx x = go
   where
     go height bn n =
       case n of
         Node2 ba a bb b
           | height >= depth ->
-              let (be, e, !bz, !z) = leastEnlargement2 bx ba a bb b
+              let !(# be, e, !bz, !z #) = leastEnlargement2 bx ba a bb b
               in case go (height + 1) be e of
                    InsOne bo o               -> InsOne (unionMBR bo bz) (Node2 bo o bz z)
                    InsCarry mask' carry bo o ->
@@ -1811,7 +1791,7 @@ insertNode mask depth bx x = go
 
         Node3 ba a bb b bc c
           | height >= depth ->
-              let (be, e, !by, !y, !bz, !z) = leastEnlargement3 bx ba a bb b bc c
+              let !(# be, e, !by, !y, !bz, !z #) = leastEnlargement3 bx ba a bb b bc c
               in case go (height + 1) be e of
                    InsOne bo o               ->
                      InsOne (union3MBR bo by bz) (Node3 bo o by y bz z)
@@ -1827,7 +1807,7 @@ insertNode mask depth bx x = go
 
         Node4 ba a bb b bc c bd d
           | height >= depth ->
-              let (be, e, !bw, !w, !by, !y, !bz, !z) = leastEnlargement4 bx ba a bb b bc c bd d
+              let !(# be, e, !bw, !w, !by, !y, !bz, !z #) = leastEnlargement4 bx ba a bb b bc c bd d
               in case go (height + 1) be e of
                    InsOne bo o               ->
                      InsOne (union4MBR bo bw by bz) (Node4 bo o bw w by y bz z)
@@ -1847,8 +1827,8 @@ insertNode mask depth bx x = go
                                 InsTwo mask bl' (Node2 bm m bo o) br' (Node3 bp p bs s bt t)
 
                           _ ->
-                            let (bm, m, bo, o, bp, p, bs, s, bt, t) =
-                                  sort5 (distance (unionMBR bn bx)) bl l br r bw w by y bz z
+                            let !(# bm, m, bo, o, bp, p, bs, s, bt, t #) =
+                                  sort5Distance (unionMBR bn bx) bl l br r bw w by y bz z
 
                             in InsCarry (mask .|. bit_) (CarryNode height bt t)
                                  (union4MBR bm bo bp bs) (Node4 bm m bo o bp p bs s)
@@ -1865,31 +1845,28 @@ insertNode mask depth bx x = go
                          InsTwo mask bl' (Node2 bm m bo o) br' (Node3 bp p bs s bt t)
 
                    _ ->
-                     let (bm, m, bo, o, bp, p, bs, s, bt, t) =
-                           sort5 (distance (unionMBR bn bx)) ba a bb b bc c bd d bx x
+                     let !(# bm, m, bo, o, bp, p, bs, s, bt, t #) =
+                           sort5Distance (unionMBR bn bx) ba a bb b bc c bd d bx x
 
                      in InsCarry (mask .|. bit_) (CarryNode height bt t)
                           (union4MBR bm bo bp bs) (Node4 bm m bo o bp p bs s)
 
 
 
-        _ -> assert False
-               (errorWithoutStackTrace "Data.RTree.D2.Float.Internal.insertNode: reached a leaf")
-               n
+        _ -> errorWithoutStackTrace "Data.R2Tree.Float.Internal.insertNode: reached a leaf"
 
 
 
-{-# NOINLINE sortSplit #-}
 sortSplit :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> Q3 a
 sortSplit ba a bb b bc c bd d be e =
-  let v = sort5 vertical   ba a bb b bc c bd d be e
-      h = sort5 horizontal ba a bb b bc c bd d be e
+  let v = sort5_ vertical   ba a bb b bc c bd d be e
+      h = sort5_ horizontal ba a bb b bc c bd d be e
 
       vg = group v
       hg = group h
 
-      ( al@(L3 bu _ _ _ _ _ _), ar@(L2 bv _ _ _ _)
-       , bl@(L2 bx _ _ _ _), br@(L3 by _ _ _ _ _ _) )
+      !(# al@(L3 bu _ _ _ _ _ _), ar@(L2 bv _ _ _ _)
+       , bl@(L2 bx _ _ _ _), br@(L3 by _ _ _ _ _ _) #)
           | margins vg <= margins hg = vg
           | otherwise                = hg
 
@@ -1901,6 +1878,16 @@ sortSplit ba a bb b bc c bd d be e =
        LT -> aw
        EQ | areaMBR bu + areaMBR bv <= areaMBR bx + areaMBR by -> aw
           | otherwise                                          -> bw
+
+
+
+sort5Distance
+  :: MBR
+  -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a
+  -> (# MBR, a, MBR, a, MBR, a, MBR, a, MBR, a #)
+sort5Distance bx ka a kb b kc c kd d ke e =
+  sort5_ (distance bx) ka a kb b kc c kd d ke e
+
 
 
 
@@ -1924,48 +1911,49 @@ vertical (UnsafeMBR _ ymin _ ymax) (UnsafeMBR _ ymin' _ ymax') =
 distance :: MBR -> MBR -> MBR -> Bool
 distance bx ba bb = distanceMBR bx ba <= distanceMBR bx bb
 
-{-# INLINE sort5 #-}
-sort5
+{-# INLINE sort5_ #-}
+sort5_
   :: (k -> k -> Bool) -- as in (A is smaller than B)
   -> k -> a -> k -> a -> k -> a -> k -> a -> k -> a
-  -> (k, a, k, a, k, a, k, a, k, a)
-sort5 f ka a kb b kc c kd d ke e =
+  -> (# k, a, k, a, k, a, k, a, k, a #)
+sort5_ f ka a kb b kc c kd d ke e =
   let swap kx x ky y
-        | f kx ky  = (kx, x, ky, y)
-        | otherwise = (ky, y, kx, x)
+        | f kx ky   = (# kx, x, ky, y #)
+        | otherwise = (# ky, y, kx, x #)
 
       sort3 kw w kx x ky y kz z
         | f kw ky  =
             if f kw kx
-              then (kw, w, kx, x, ky, y, kz, z)
-              else (kx, x, kw, w, ky, y, kz, z)
+              then (# kw, w, kx, x, ky, y, kz, z #)
+              else (# kx, x, kw, w, ky, y, kz, z #)
 
         | otherwise =
             if f kw kz
-              then (kx, x, ky, y, kw, w, kz, z)
-              else (kx, x, ky, y, kz, z, kw, w)
+              then (# kx, x, ky, y, kw, w, kz, z #)
+              else (# kx, x, ky, y, kz, z, kw, w #)
 
-      (ka1, a1, kb1, b1) = swap ka a kb b
-      (kc1, c1, kd1, d1) = swap kc c kd d
+      (# ka1, a1, kb1, b1 #) = swap ka a kb b
+      (# kc1, c1, kd1, d1 #) = swap kc c kd d
 
-      (ka2, (a2, kb2, b2), kc2, (c2, kd2, d2)) = swap ka1 (a1, kb1, b1) kc1 (c1, kd1, d1)
+      (# ka2, (a2, kb2, b2), kc2, (c2, kd2, d2) #) =
+        swap ka1 (a1, kb1, b1) kc1 (c1, kd1, d1)
 
-      (ka3, a3, kc3, c3, kd3, d3, ke3, e3) = sort3 ke e ka2 a2 kc2 c2 kd2 d2
+      (# ka3, a3, kc3, c3, kd3, d3, ke3, e3 #) = sort3 ke e ka2 a2 kc2 c2 kd2 d2
 
-      (kb4, b4, kc4, c4, kd4, d4, ke4, e4) = sort3 kb2 b2 kc3 c3 kd3 d3 ke3 e3
+      (# kb4, b4, kc4, c4, kd4, d4, ke4, e4 #) = sort3 kb2 b2 kc3 c3 kd3 d3 ke3 e3
 
-  in (ka3, a3, kb4, b4, kc4, c4, kd4, d4, ke4, e4)
+  in (# ka3, a3, kb4, b4, kc4, c4, kd4, d4, ke4, e4 #)
 
 {-# INLINE group #-}
 group
-  :: (MBR, a, MBR, a, MBR, a, MBR, a, MBR, a) -> (L3 a, L2 a, L2 a, L3 a)
-group (ba, a, bb, b, bc, c, bd, d, be, e) =
-  ( L3 (union3MBR ba bb bc) ba a bb b bc c, L2 (unionMBR bd be) bd d be e
-   , L2 (unionMBR ba bb) ba a bb b, L3 (union3MBR bd be bc) bd d be e bc c )
+  :: (# MBR, a, MBR, a, MBR, a, MBR, a, MBR, a #) -> (# L3 a, L2 a, L2 a, L3 a #)
+group (# ba, a, bb, b, bc, c, bd, d, be, e #) =
+  (# L3 (union3MBR ba bb bc) ba a bb b bc c, L2 (unionMBR bd be) bd d be e
+   , L2 (unionMBR ba bb) ba a bb b, L3 (union3MBR bd be bc) bd d be e bc c #)
 
 {-# INLINE margins #-}
-margins :: (L3 a, L2 a, L2 a, L3 a) -> Float
-margins (L3 bw _ _ _ _ _ _, L2 bx _ _ _ _, L2 by _ _ _ _, L3 bz _ _ _ _ _ _) =
+margins :: (# L3 a, L2 a, L2 a, L3 a #) -> Float
+margins (# L3 bw _ _ _ _ _ _, L2 bx _ _ _ _, L2 by _ _ _ _, L3 bz _ _ _ _ _ _ #) =
   marginMBR bw + marginMBR bx + marginMBR by + marginMBR bz
 
 
@@ -1975,13 +1963,16 @@ margins (L3 bw _ _ _ _ _ _, L2 bx _ _ _ _, L2 by _ _ _ _, L3 bz _ _ _ _ _ _) =
 --   If multiple entries qualify, the leftmost one is removed.
 --
 --   'delete' uses the R-tree deletion algorithm with quadratic-cost splits.
-delete :: MBR -> RTree a -> RTree a
+delete :: MBR -> R2Tree a -> R2Tree a
 delete bx s =
   case delete_ bx 0 s of
     DelOne _ o     -> o
     DelNone        -> s
     DelSome re _ o -> reintegrate 0 o re
-    DelRe re       -> reconstruct re
+    DelRe re       ->
+      case re of
+        ReCons _ _ n re' -> reintegrate (-1) n re'
+        ReLeaf ba a      -> Leaf1 ba a
   where
     reintegrate height n re =
       case re of
@@ -1995,22 +1986,17 @@ delete bx s =
             GutOne _ o       -> o
             GutTwo bl l br r -> Node2 bl l br r
 
-    {-# INLINE reconstruct #-}
-    reconstruct re =
-      case re of
-        ReCons _ _ n re' -> reintegrate (-1) n re'
-        ReLeaf ba a      -> Leaf1 ba a
 
-data Re a = ReCons Int MBR (RTree a) (Re a)
+
+data Re a = ReCons Int MBR (R2Tree a) (Re a)
           | ReLeaf MBR a
 
 data Del a = DelNone
-           | DelOne MBR (RTree a)
-           | DelSome (Re a) MBR (RTree a)
+           | DelOne MBR (R2Tree a)
+           | DelSome (Re a) MBR (R2Tree a)
            | DelRe (Re a)
 
-{-# INLINE delete_ #-}
-delete_ :: MBR -> Int -> RTree a -> Del a
+delete_ :: MBR -> Int -> R2Tree a -> Del a
 delete_ bx = go
   where
     {-# INLINE cut2 #-}
@@ -2146,7 +2132,7 @@ partition1 n_ = go
 -- | \(\mathcal{O}(n \log n)\). Bulk-load a tree.
 --
 --   'bulkSTR' uses the Sort-Tile-Recursive algorithm.
-bulkSTR :: [(MBR, a)] -> RTree a
+bulkSTR :: [(MBR, a)] -> R2Tree a
 bulkSTR xs =
   case xs of
     _:_:_     -> snd $ vertically (length xs) xs
@@ -2183,7 +2169,7 @@ bulkSTR xs =
 
     compress [] =
       errorWithoutStackTrace
-        "Data.RTree.D2.Float.Internal.bulkSTR: zero-sized partition"
+        "Data.R2Tree.Float.Internal.bulkSTR: zero-sized partition"
 
     mend (ba, a) (bb, b) cs =
       case cs of
@@ -2215,4 +2201,4 @@ bulkSTR xs =
           (unionMBR ba bb, Leaf2 ba a bb b)
 
         _ -> errorWithoutStackTrace
-               "Data.RTree.D2.Float.Internal.bulkSTR: malformed leaf"
+               "Data.R2Tree.Float.Internal.bulkSTR: malformed leaf"

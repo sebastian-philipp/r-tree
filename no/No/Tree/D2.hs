@@ -8,7 +8,7 @@
 
 module No.Tree.D2 where
 
-import           Data.RTree.D2.Double.Unsafe (MBR (..), Predicate (..))
+import           Data.R2Tree.Double.Unsafe (MBR (..), Predicate (..))
 
 import           Control.DeepSeq
 import qualified Data.Foldable as Fold

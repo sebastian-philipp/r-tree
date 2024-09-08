@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Test.RTree.D2.Double.Sample
+module Test.R2Tree.Double.Sample
   ( Sample
   , zero
   , one
@@ -15,7 +15,7 @@ module Test.RTree.D2.Double.Sample
   , mkUnary1
   ) where
 
-import           Data.RTree.D2.Double
+import           Data.R2Tree.Double
 import           No.Tree.D2 (NoTree)
 import qualified No.Tree.D2 as No
 import           Test.Kit

@@ -19,9 +19,9 @@
 
 module Main where
 
-import           Data.RTree.D2.Double (RTree, MBR)
-import qualified Data.RTree.D2.Double as R
-import qualified Data.RTree.D2.Double.Unsafe as R
+import           Data.R2Tree.Double (R2Tree, MBR)
+import qualified Data.R2Tree.Double as R
+import qualified Data.R2Tree.Double.Unsafe as R
 
 import           Control.Concurrent
 import           Control.Exception
@@ -142,8 +142,8 @@ data State =
          { sGen     :: StdGen
          , sOffset  :: Int
          , sMode    :: Mode
-         , sHistory :: [RTree ()]
-         , sFuture  :: [RTree ()]
+         , sHistory :: [R2Tree ()]
+         , sFuture  :: [R2Tree ()]
          , sVao     :: GLuint
          , sVbo     :: GLuint
          }
@@ -398,7 +398,7 @@ mbr (R.UnsafeMBR xmin ymin xmax ymax) rgb =
      , Point xmin_ ymin_ rgb
      ]
 
-visualize :: Mode -> RTree a -> [Point]
+visualize :: Mode -> R2Tree a -> [Point]
 visualize mode = visual 0
   where
     wash i

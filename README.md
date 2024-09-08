@@ -1,5 +1,18 @@
-data-r-tree
+# r-tree [![Hackage](http://img.shields.io/hackage/v/r-tree.svg)](https://hackage.haskell.org/package/r-tree)
 
----
+A Haskell library for [R-trees](https://en.wikipedia.org/wiki/R-tree) and [R\*-trees](https://en.wikipedia.org/wiki/R\*-tree).
 
-R/R\*-trees, currently only two-dimensional `Float` and `Double` varieties.
+> [!NOTE]
+>
+> R-trees are self-balancing and as such can only be spine-strict.
+
+Featuring:
+
+- `Data.R2Tree.*`: two-dimensional R-tree with the R\*-tree insertion algorithm.
+
+  `Double`-based implementation is considered the default one;
+  a `Float`-based variant is provided for cases where reduced precision is preferred,
+  for example rendering.
+
+Higher-dimensional R-trees are not currently provided,
+but should be trivial to add if needed.

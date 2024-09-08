@@ -1,7 +1,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 
 {- |
-     Module     : Data.RTree.D2.Double
+     Module     : Data.R2Tree.Double
      Copyright  : Copyright (c) 2015, Birte Wagner, Sebastian Philipp
                   Copyright (c) 2022, Oleksii Divak
      License    : MIT
@@ -10,8 +10,7 @@
      Stability  : experimental
      Portability: not portable
 
-     @'RTree' a@ is a spine-strict two-dimensional spatial tree
-     from bounding rectangles of type 'Double' to values of type @a@.
+     @'R2Tree' a@ is a spine-strict two-dimensional spatial tree using 'Double's as keys.
 
      R-trees have no notion of element order, as such:
 
@@ -25,7 +24,7 @@
 
      == Laziness
 
-     Evaluating the root of the tree (i.e. @(_ :: 'RTree' a)@) to WHNF
+     Evaluating the root of the tree (i.e. @(_ :: 'R2Tree' a)@) to WHNF
      evaluates the entire spine of the tree to normal form.
 
      Functions do not perform any additional evaluations unless
@@ -34,12 +33,25 @@
      == Performance
 
      Each function's time complexity is provided in the documentation.
-     
-     \(n\) refers to the total number of entries in the tree.
 
-     \(r\) refers to the time complexity of the chosen 'Predicate' lookup,
-     ranging from \(\mathcal{O}(\log n)\) (well-balanced)
-     to \(\mathcal{O}(n)\) (worst-case) depending on tree quality.
+     \(n\) refers to the total number of entries in the tree.
+     Parts of the tree are denoted using subscripts: \(n_L\) refers to the left side,
+     \(n_R\) to the right side, \(n_I\) to a range (interval), and
+     \(n_M\) to entries collected with the use of a 'Monoid'.
+
+     == Inlining
+
+     Functions that produce and consume 'Predicate's inline heavily.
+     To avoid unnecessary code duplication during compilation consider creating
+     helper functions that apply these functions one to another, e.g.
+
+@
+listIntersections :: 'MBR' -> 'R2Tree' a -> [('MBR', a)]
+listIntersections mbr = foldrRangeWithKey (intersects mbr) (\a b -> (:) (a, b)) []
+@
+
+     N.B. To inline properly functions that consume 'Predicate's
+     must mention all of the arguments except for the tree.
 
      == Implementation
 
@@ -62,13 +74,16 @@
          <https://ia800900.us.archive.org/27/items/nasa_techdoc_19970016975/19970016975.pdf>
 -}
 
-module Data.RTree.D2.Double
+module Data.R2Tree.Double
   ( MBR (MBR)
-  , RTree
+  , R2Tree
 
     -- * Construct
   , empty
   , singleton
+  , doubleton
+  , tripleton
+  , quadrupleton
 
     -- ** Bulk-loading
   , bulkSTR
@@ -82,7 +97,6 @@ module Data.RTree.D2.Double
   , delete
 
     -- * Range
-    -- | NOTE: both 'Predicate's and functions using them inline heavily.
   , Predicate
   , equals
   , intersects
@@ -108,47 +122,62 @@ module Data.RTree.D2.Double
 
     -- * Full tree
     -- ** Size
-  , Data.RTree.D2.Double.Internal.null
+  , Data.R2Tree.Double.Internal.null
   , size
 
     -- ** Map
-  , Data.RTree.D2.Double.Internal.map
+  , Data.R2Tree.Double.Internal.map
   , map'
   , mapWithKey
   , mapWithKey'
 
     -- ** Fold
     -- | === Left-to-right
-  , Data.RTree.D2.Double.Internal.foldl
-  , Data.RTree.D2.Double.Internal.foldl'
+  , Data.R2Tree.Double.Internal.foldl
+  , Data.R2Tree.Double.Internal.foldl'
   , foldlWithKey
   , foldlWithKey'
 
     -- | === Right-to-left
-  , Data.RTree.D2.Double.Internal.foldr
-  , Data.RTree.D2.Double.Internal.foldr'
+  , Data.R2Tree.Double.Internal.foldr
+  , Data.R2Tree.Double.Internal.foldr'
   , foldrWithKey
   , foldrWithKey'
 
     -- | === Monoid
-  , Data.RTree.D2.Double.Internal.foldMap
+  , Data.R2Tree.Double.Internal.foldMap
   , foldMapWithKey
 
     -- ** Traverse
-  , Data.RTree.D2.Double.Internal.traverse
+  , Data.R2Tree.Double.Internal.traverse
   , traverseWithKey
   ) where
 
-import           Data.RTree.D2.Double.Internal
+import           Data.R2Tree.Double.Internal
 
 
 
 -- | \(\mathcal{O}(1)\).
 --   Empty tree.
-empty :: RTree a
+empty :: R2Tree a
 empty = Empty
 
 -- | \(\mathcal{O}(1)\).
 --   Tree with a single entry.
-singleton :: MBR -> a -> RTree a
+singleton :: MBR -> a -> R2Tree a
 singleton = Leaf1
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with two entries.
+doubleton :: MBR -> a -> MBR -> a -> R2Tree a
+doubleton = Leaf2
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with three entries.
+tripleton :: MBR -> a -> MBR -> a -> MBR -> a -> R2Tree a
+tripleton = Leaf3
+
+-- | \(\mathcal{O}(1)\).
+--   Tree with four entries.
+quadrupleton :: MBR -> a -> MBR -> a -> MBR -> a -> MBR -> a -> R2Tree a
+quadrupleton = Leaf4

@@ -4,17 +4,17 @@
 
 module Main where
 
-import           Data.RTree.D2.Double (RTree, MBR, Predicate)
-import qualified Data.RTree.D2.Double as R
+import           Data.R2Tree.Double (R2Tree, MBR, Predicate)
+import qualified Data.R2Tree.Double as R
 
 import           Control.DeepSeq
 import           Control.Monad
 import           Data.Foldable
 import           Data.List hiding (lookup, map)
 import           Data.Monoid
-import           Gauge
 import           Prelude hiding (lookup, map)
 import           System.Random.Stateful
+import           Test.Tasty.Bench
 
 
 
@@ -51,7 +51,7 @@ genAreas n = replicateM n . randPoint
 
 
 lookup
-  :: String -> ([(MBR, Int)] -> RTree Int)
+  :: String -> ([(MBR, Int)] -> R2Tree Int)
   -> String -> (MBR -> Predicate) -> Benchmark
 lookup cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
@@ -70,7 +70,7 @@ lookup cat from name pre =
 
 
 map
-  :: String -> ([(MBR, Int)] -> RTree Int)
+  :: String -> ([(MBR, Int)] -> R2Tree Int)
   -> String -> (MBR -> Predicate) -> Benchmark
 map cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
@@ -83,7 +83,7 @@ map cat from name pre =
              fmap $ \x -> [R.adjustRangeWithKey (pre x) (\_ -> (+) 1) r]
 
 traversal
-  :: String -> ([(MBR, Int)] -> RTree Int)
+  :: String -> ([(MBR, Int)] -> R2Tree Int)
   -> String -> (MBR -> Predicate) -> Benchmark
 traversal cat from name pre =
   env ( do g <- newIOGenM $ mkStdGen 0
@@ -96,11 +96,11 @@ traversal cat from name pre =
              traverse $ \x -> fmap (:[]) $ R.traverseRangeWithKey (pre x) (\_ -> pure @IO . (+) 1) r
 
 
-fromList :: Foldable t => t (MBR, b) -> RTree b
-fromList = foldr (uncurry R.insert) R.empty
+fromList :: Foldable t => t (MBR, b) -> R2Tree b
+fromList = foldl' (\z (a, b) -> R.insert a b z) R.empty
 
-fromListGut :: Foldable t => t (MBR, b) -> RTree b
-fromListGut = foldr (uncurry R.insertGut) R.empty
+fromListGut :: Foldable t => t (MBR, b) -> R2Tree b
+fromListGut = foldl' (\z (a, b) -> R.insertGut a b z) R.empty
 
 
 main :: IO ()

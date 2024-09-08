@@ -2,7 +2,7 @@
 
 module Main where
 
-import qualified Data.RTree.D2.Float as R
+import qualified Data.R2Tree.Float as R
 
 import           Control.Monad
 import           Data.Foldable
