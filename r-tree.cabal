@@ -92,6 +92,12 @@ test-suite properties
 
   main-is:              Main.hs
 
+  other-modules:        No.Tree.D2
+
+                        Test.Kit
+                        Test.R2Tree.Double
+                        Test.R2Tree.Double.Sample
+
   ghc-options:          -Wall
 
   hs-source-dirs:       no
